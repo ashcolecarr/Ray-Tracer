@@ -128,6 +128,7 @@ impl Div<f64> for Tuple {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::near_eq;
 
     #[test]
     fn tuple_with_w1_is_point() {
@@ -138,10 +139,10 @@ mod tests {
         
         let actual = Tuple { x: 4.3, y: -4.2, z: 3.1, w: 1.0 };
 
-        assert_eq!(expected_x, actual.x);
-        assert_eq!(expected_y, actual.y);
-        assert_eq!(expected_z, actual.z);
-        assert_eq!(expected_w, actual.w);
+        assert!(near_eq(expected_x, actual.x));
+        assert!(near_eq(expected_y, actual.y));
+        assert!(near_eq(expected_z, actual.z));
+        assert!(near_eq(expected_w, actual.w));
         assert!(actual.is_point());
         assert!(!actual.is_vector());
     }
@@ -155,10 +156,10 @@ mod tests {
         
         let actual = Tuple { x: 4.3, y: -4.2, z: 3.1, w: 0.0 };
 
-        assert_eq!(expected_x, actual.x);
-        assert_eq!(expected_y, actual.y);
-        assert_eq!(expected_z, actual.z);
-        assert_eq!(expected_w, actual.w);
+        assert!(near_eq(expected_x, actual.x));
+        assert!(near_eq(expected_y, actual.y));
+        assert!(near_eq(expected_z, actual.z));
+        assert!(near_eq(expected_w, actual.w));
         assert!(!actual.is_point());
         assert!(actual.is_vector());
     }
