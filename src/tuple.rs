@@ -61,7 +61,7 @@ impl Tuple {
 }
 
 impl Add for Tuple {
-    type Output = Tuple;
+    type Output = Self;
 
     fn add(self, other: Self) -> Self {
         Self {
@@ -74,7 +74,7 @@ impl Add for Tuple {
 }
 
 impl Sub for Tuple {
-    type Output = Tuple;
+    type Output = Self;
 
     fn sub(self, other: Self) -> Self {
         Self {
@@ -87,7 +87,7 @@ impl Sub for Tuple {
 }
 
 impl Neg for Tuple {
-    type Output = Tuple;
+    type Output = Self;
 
     fn neg(self) -> Self {
         Self {
@@ -100,7 +100,7 @@ impl Neg for Tuple {
 }
 
 impl Mul<f64> for Tuple {
-    type Output = Tuple;
+    type Output = Self;
 
     fn mul(self, other: f64) -> Self {
         Self {
@@ -113,7 +113,7 @@ impl Mul<f64> for Tuple {
 }
 
 impl Div<f64> for Tuple {
-    type Output = Tuple;
+    type Output = Self;
 
     fn div(self, other: f64) -> Self {
         Self {
