@@ -64,6 +64,75 @@ impl Matrix {
 
         transposition
     }
+
+    pub fn determinant(&self) -> f64 {
+        if self.rows == 2 && self.columns == 2 {
+            return (self[0][0] * self[1][1]) - (self[0][1] * self[1][0]);
+        }
+
+        let mut determinant = 0.;
+        for column in 0..self.columns {
+            determinant += self[0][column] * self.cofactor(0, column);
+        }
+
+        determinant
+    }
+
+    pub fn submatrix(&self, row_to_remove: usize, column_to_remove: usize) -> Self {
+        let mut submatrix = Matrix::new(self.rows - 1, self.columns - 1,
+            vec![0.0; (self.rows - 1) * (self.columns - 1)]);
+        let mut submatrix_row_count = 0;
+        for row in 0..self.rows {
+            if row == row_to_remove {
+                continue;
+            }
+
+            let mut submatrix_column_count = 0;
+            for column in 0..self.columns {
+                if column == column_to_remove {
+                    continue;
+                }
+
+                submatrix[submatrix_row_count][submatrix_column_count] = self[row][column];
+                submatrix_column_count += 1;
+            }
+            submatrix_row_count += 1;
+        }
+
+        submatrix
+    }
+
+    pub fn minor(&self, row: usize, column: usize) -> f64 {
+        let submatrix = self.submatrix(row, column);
+
+        submatrix.determinant()
+    }
+
+    pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+        let minor = self.minor(row, column);
+
+        if (row + column) % 2 == 1 { minor * -1. } else { minor }
+    }
+
+    pub fn inverse(&self) -> Option<Self> {
+        let determinant = self.determinant();
+        if near_eq(determinant, 0.) {
+            return None;
+        }
+
+        let mut inverse = Matrix::new(self.rows, self.columns, 
+            vec![0.0; self.rows * self.columns]);
+        
+        for row in 0..self.rows {
+            for column in 0..self.columns {
+                let cofactor = self.cofactor(row, column);
+
+                inverse[column][row] = cofactor / determinant;
+            }
+        }
+
+        Some(inverse)
+    }
 }
 
 impl Index<usize> for Matrix {
@@ -281,6 +350,237 @@ mod tests {
         let expected = Matrix::identity(4);
 
         let actual = identity_matrix.transpose();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn calculating_determinant_of_2x2_matrix() {
+        let matrix = Matrix::new(2, 2, vec![1., 5., -3., 2.]);
+
+        let expected = 17.;
+
+        let actual = matrix.determinant();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn submatrix_of_3x3_matrix_is_2x2_matrix() {
+        let values = vec![1., 5., 0., -3., 2., 7., 0., 6., -3.];
+        let matrix = Matrix::new(3, 3, values);
+
+        let expected = Matrix::new(2, 2, vec![-3., 2., 0., 6.]);
+
+        let actual = matrix.submatrix(0, 2);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn submatrix_of_4x4_matrix_is_3x3_matrix() {
+        let values = vec![-6., 1., 1., 6., -8., 5., 8., 6.,
+            -1., 0., 8., 2., -7., 1., -1., 1.];
+        let matrix = Matrix::new(4, 4, values);
+
+        let expected = Matrix::new(3, 3, vec![-6., 1., 6., -8., 8., 6.,
+            -7., -1., 1.]);
+
+        let actual = matrix.submatrix(2, 1);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn calculating_minor_of_3x3_matrix() {
+        let values = vec![3., 5., 0., 2., -1., -7., 6., -1., 5.];
+        let matrix = Matrix::new(3, 3, values);
+        let submatrix = matrix.submatrix(1, 0);
+
+        let expected = 25.;
+
+        let actual1 = submatrix.determinant();
+        let actual2 = matrix.minor(1, 0);
+
+        assert_eq!(expected, actual1);
+        assert_eq!(expected, actual2);
+    }
+
+    #[test]
+    fn calculating_cofactor_of_3x3_matrix() {
+        let values = vec![3., 5., 0., 2., -1., -7., 6., -1., 5.];
+        let matrix = Matrix::new(3, 3, values);
+
+        let expected_minor1 = -12.;
+        let expected_cofactor1 = -12.;
+        let expected_minor2 = 25.;
+        let expected_cofactor2 = -25.;
+
+        let actual_minor1 = matrix.minor(0, 0);
+        let actual_cofactor1 = matrix.cofactor(0, 0);
+        let actual_minor2 = matrix.minor(1, 0);
+        let actual_cofactor2 = matrix.cofactor(1, 0);
+
+        assert_eq!(expected_minor1, actual_minor1);
+        assert_eq!(expected_cofactor1, actual_cofactor1);
+        assert_eq!(expected_minor2, actual_minor2);
+        assert_eq!(expected_cofactor2, actual_cofactor2);
+    }
+
+    #[test]
+    fn calculating_determinant_of_3x3_matrix() {
+        let values = vec![1., 2., 6., -5., 8., -4., 2., 6., 4.];
+        let matrix = Matrix::new(3, 3, values);
+
+        let expected_cofactor1 = 56.;
+        let expected_cofactor2 = 12.;
+        let expected_cofactor3 = -46.;
+        let expected_determinant = -196.;
+
+        let actual_cofactor1 = matrix.cofactor(0, 0);
+        let actual_cofactor2 = matrix.cofactor(0, 1);
+        let actual_cofactor3 = matrix.cofactor(0, 2);
+        let actual_determinant = matrix.determinant();
+
+        assert_eq!(expected_cofactor1, actual_cofactor1);
+        assert_eq!(expected_cofactor2, actual_cofactor2);
+        assert_eq!(expected_cofactor3, actual_cofactor3);
+        assert_eq!(expected_determinant, actual_determinant);
+    }
+
+    #[test]
+    fn calculating_determinant_of_4x4_matrix() {
+        let values = vec![-2., -8., 3., 5., -3., 1., 7., 3.,
+            1., 2., -9., 6., -6., 7., 7., -9.];
+        let matrix = Matrix::new(4, 4, values);
+
+        let expected_cofactor1 = 690.;
+        let expected_cofactor2 = 447.;
+        let expected_cofactor3 = 210.;
+        let expected_cofactor4 = 51.;
+        let expected_determinant = -4071.;
+
+        let actual_cofactor1 = matrix.cofactor(0, 0);
+        let actual_cofactor2 = matrix.cofactor(0, 1);
+        let actual_cofactor3 = matrix.cofactor(0, 2);
+        let actual_cofactor4 = matrix.cofactor(0, 3);
+        let actual_determinant = matrix.determinant();
+
+        assert_eq!(expected_cofactor1, actual_cofactor1);
+        assert_eq!(expected_cofactor2, actual_cofactor2);
+        assert_eq!(expected_cofactor3, actual_cofactor3);
+        assert_eq!(expected_cofactor4, actual_cofactor4);
+        assert_eq!(expected_determinant, actual_determinant);
+    }
+
+    #[test]
+    fn testing_invertible_matrix_for_invertibility() {
+        let values = vec![6., 4., 4., 4., 5., 5., 7., 6.,
+            4., -9., 3., -7., 9., 1., 7., -6.];
+        let matrix = Matrix::new(4, 4, values);
+
+        let expected = -2120.;
+
+        let actual = matrix.determinant();
+
+        assert_eq!(expected, actual);
+        assert!(matrix.inverse().is_some());
+    }
+
+    #[test]
+    fn testing_noninvertible_matrix_for_invertibility() {
+        let values = vec![-4., 2., -2., -3., 9., 6., 2., 6.,
+            0., -5., 1., -5., 0., 0., 0., 0.];
+        let matrix = Matrix::new(4, 4, values);
+
+        let expected = 0.;
+
+        let actual = matrix.determinant();
+
+        assert_eq!(expected, actual);
+        assert!(matrix.inverse().is_none());
+    }
+
+    #[test]
+    fn calculating_inverse_of_matrix() {
+        let values1 = vec![-5., 2., 6., -8., 1., -5., 1., 8.,
+            7., 7., -6., -7., 1., -3., 7., 4.];
+        let matrix = Matrix::new(4, 4, values1);
+
+        let expected_determinant = 532.;
+        let expected_cofactor1 = -160.;
+        let expected_3_2 = -160. / 532.;
+        let expected_cofactor2 = 105.;
+        let expected_2_3 = 105. / 532.;
+        let values2 = vec![0.21805, 0.45113, 0.24060, -0.04511, 
+            -0.80827, -1.45677, -0.44361, 0.52068,
+            -0.07895, -0.22368, -0.05263, 0.19737, 
+            -0.52256, -0.81391, -0.30075, 0.30639];
+        let expected_matrix = Matrix::new(4, 4, values2);
+
+        let actual_matrix = matrix.inverse().unwrap();
+        let actual_determinant = matrix.determinant();
+        let actual_cofactor1 = matrix.cofactor(2, 3);
+        let actual_3_2 = actual_matrix[3][2];
+        let actual_cofactor2 = matrix.cofactor(3, 2);
+        let actual_2_3 = actual_matrix[2][3];
+
+        assert_eq!(expected_determinant, actual_determinant);
+        assert_eq!(expected_cofactor1, actual_cofactor1);
+        assert_eq!(expected_3_2, actual_3_2);
+        assert_eq!(expected_cofactor2, actual_cofactor2);
+        assert_eq!(expected_2_3, actual_2_3);
+        assert_eq!(expected_matrix, actual_matrix);
+    }
+
+    #[test]
+    fn calculating_inverse_of_another_matrix() {
+        let values1 = vec![8., -5., 9., 2., 7., 5., 6., 1.,
+            -6., 0., 9., 6., -3., 0., -9., -4.];
+        let matrix = Matrix::new(4, 4, values1);
+
+        let values2 = vec![-0.15385, -0.15385, -0.28205, -0.53846, 
+            -0.07692, 0.12308, 0.02564, 0.03077, 
+            0.35897, 0.35897, 0.43590, 0.92308, 
+            -0.69231, -0.69231, -0.76923, -1.92308];
+        let expected = Matrix::new(4, 4, values2);
+
+        let actual = matrix.inverse().unwrap();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn calculating_inverse_of_third_matrix() {
+        let values1 = vec![9., 3., 0., 9., -5., -2., -6., -3.,
+            -4., 9., 6., 4., -7., 6., 6., 2.];
+        let matrix = Matrix::new(4, 4, values1);
+
+        let values2 = vec![-0.04074, -0.07778, 0.14444, -0.22222,
+            -0.07778, 0.03333, 0.36667, -0.33333,
+            -0.02901, -0.14630, -0.10926, 0.12963,
+            0.17778, 0.06667, -0.26667, 0.33333];
+
+        let expected = Matrix::new(4, 4, values2);
+
+        let actual = matrix.inverse().unwrap();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn multiplying_product_by_its_inverse() {
+        let values1 = vec![3., -9., 7., 3., 3., -8., 2., -9.,
+            -4., 4., 4., 1., -6., 5., -1., 1.];
+        let matrix1 = Matrix::new(4, 4, values1);
+        let values2 = vec![8., 2., 2., 2., 3., -1., 7., 0., 
+            7., 0., 5., 4., 6., -2., 0., 5.];
+        let matrix2 = Matrix::new(4, 4, values2);
+        let matrix3 = matrix1.clone() * matrix2.clone(); 
+
+        let expected = matrix1;
+
+        let actual = matrix3 * matrix2.inverse().unwrap();
 
         assert_eq!(expected, actual);
     }
