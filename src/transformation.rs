@@ -51,6 +51,18 @@ pub fn rotate(radians: f64, axis: Axis) -> Matrix {
     matrix
 }
 
+pub fn shear(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matrix {
+    let mut matrix = Matrix::identity(4);
+    matrix[0][1] = x_y;
+    matrix[0][2] = x_z;
+    matrix[1][0] = y_x;
+    matrix[1][2] = y_z;
+    matrix[2][0] = z_x;
+    matrix[2][1] = z_y;
+
+    matrix
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,5 +214,112 @@ mod tests {
 
         assert_eq!(expected_half, actual_half);
         assert_eq!(expected_full, actual_full);
+    }
+
+    #[test]
+    fn shearing_transformation_moves_x_in_proportion_to_y() {
+        let transform = shear(1., 0., 0., 0., 0., 0.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(5., 3., 4.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn shearing_transformation_moves_x_in_proportion_to_z() {
+        let transform = shear(0., 1., 0., 0., 0., 0.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(6., 3., 4.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+    
+    #[test]
+    fn shearing_transformation_moves_y_in_proportion_to_x() {
+        let transform = shear(0., 0., 1., 0., 0., 0.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(2., 5., 4.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+    
+    #[test]
+    fn shearing_transformation_moves_y_in_proportion_to_z() {
+        let transform = shear(0., 0., 0., 1., 0., 0.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(2., 7., 4.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+    
+    #[test]
+    fn shearing_transformation_moves_z_in_proportion_to_x() {
+        let transform = shear(0., 0., 0., 0., 1., 0.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(2., 3., 6.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+    
+    #[test]
+    fn shearing_transformation_moves_z_in_proportion_to_y() {
+        let transform = shear(0., 0., 0., 0., 0., 1.);
+        let point = Tuple::point(2., 3., 4.);
+
+        let expected = Tuple::point(2., 3., 7.);
+
+        let actual = transform * point;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn individual_transformations_are_applied_in_sequence() {
+        let point = Tuple::point(1., 0., 1.);
+        let rotation_x = rotate(PI / 2., Axis::X);
+        let scaling = scale(5., 5., 5.);
+        let translation = translate(10., 5., 7.);
+
+        let expected_rotation = Tuple::point(1., -1., 0.);
+        let actual_rotation = rotation_x * point;
+        assert_eq!(expected_rotation, actual_rotation);
+
+        let expected_scaling = Tuple::point(5., -5., 0.);
+        let actual_scaling = scaling * actual_rotation;
+        assert_eq!(expected_scaling, actual_scaling);
+
+        let expected_translation = Tuple::point(15., 0., 7.);
+        let actual_translation = translation * actual_scaling;
+        assert_eq!(expected_translation, actual_translation);
+    }
+
+    #[test]
+    fn chained_transformations_must_be_applied_in_reverse_order() {
+        let point = Tuple::point(1., 0., 1.);
+        let rotation_x = rotate(PI / 2., Axis::X);
+        let scaling = scale(5., 5., 5.);
+        let translation = translate(10., 5., 7.);
+        let transformation = translation * scaling * rotation_x;
+
+        let expected = Tuple::point(15., 0., 7.);
+
+        let actual = transformation * point;
+
+        assert_eq!(expected, actual);
     }
 }
