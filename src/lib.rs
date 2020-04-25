@@ -1,6 +1,7 @@
 pub mod canvas;
 pub mod color;
 pub mod matrix;
+pub mod transformation;
 pub mod tuple;
 
 use color::Color;
