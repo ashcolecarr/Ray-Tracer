@@ -362,7 +362,7 @@ mod tests {
 
         let actual = matrix.determinant();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -402,8 +402,8 @@ mod tests {
         let actual1 = submatrix.determinant();
         let actual2 = matrix.minor(1, 0);
 
-        assert_eq!(expected, actual1);
-        assert_eq!(expected, actual2);
+        assert!(near_eq(expected, actual1));
+        assert!(near_eq(expected, actual2));
     }
 
     #[test]
@@ -421,10 +421,10 @@ mod tests {
         let actual_minor2 = matrix.minor(1, 0);
         let actual_cofactor2 = matrix.cofactor(1, 0);
 
-        assert_eq!(expected_minor1, actual_minor1);
-        assert_eq!(expected_cofactor1, actual_cofactor1);
-        assert_eq!(expected_minor2, actual_minor2);
-        assert_eq!(expected_cofactor2, actual_cofactor2);
+        assert!(near_eq(expected_minor1, actual_minor1));
+        assert!(near_eq(expected_cofactor1, actual_cofactor1));
+        assert!(near_eq(expected_minor2, actual_minor2));
+        assert!(near_eq(expected_cofactor2, actual_cofactor2));
     }
 
     #[test]
@@ -442,10 +442,10 @@ mod tests {
         let actual_cofactor3 = matrix.cofactor(0, 2);
         let actual_determinant = matrix.determinant();
 
-        assert_eq!(expected_cofactor1, actual_cofactor1);
-        assert_eq!(expected_cofactor2, actual_cofactor2);
-        assert_eq!(expected_cofactor3, actual_cofactor3);
-        assert_eq!(expected_determinant, actual_determinant);
+        assert!(near_eq(expected_cofactor1, actual_cofactor1));
+        assert!(near_eq(expected_cofactor2, actual_cofactor2));
+        assert!(near_eq(expected_cofactor3, actual_cofactor3));
+        assert!(near_eq(expected_determinant, actual_determinant));
     }
 
     #[test]
@@ -466,11 +466,11 @@ mod tests {
         let actual_cofactor4 = matrix.cofactor(0, 3);
         let actual_determinant = matrix.determinant();
 
-        assert_eq!(expected_cofactor1, actual_cofactor1);
-        assert_eq!(expected_cofactor2, actual_cofactor2);
-        assert_eq!(expected_cofactor3, actual_cofactor3);
-        assert_eq!(expected_cofactor4, actual_cofactor4);
-        assert_eq!(expected_determinant, actual_determinant);
+        assert!(near_eq(expected_cofactor1, actual_cofactor1));
+        assert!(near_eq(expected_cofactor2, actual_cofactor2));
+        assert!(near_eq(expected_cofactor3, actual_cofactor3));
+        assert!(near_eq(expected_cofactor4, actual_cofactor4));
+        assert!(near_eq(expected_determinant, actual_determinant));
     }
 
     #[test]
@@ -483,7 +483,7 @@ mod tests {
 
         let actual = matrix.determinant();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
         assert!(matrix.inverse().is_some());
     }
 
@@ -497,7 +497,7 @@ mod tests {
 
         let actual = matrix.determinant();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
         assert!(matrix.inverse().is_none());
     }
 
@@ -525,11 +525,11 @@ mod tests {
         let actual_cofactor2 = matrix.cofactor(3, 2);
         let actual_2_3 = actual_matrix[2][3];
 
-        assert_eq!(expected_determinant, actual_determinant);
-        assert_eq!(expected_cofactor1, actual_cofactor1);
-        assert_eq!(expected_3_2, actual_3_2);
-        assert_eq!(expected_cofactor2, actual_cofactor2);
-        assert_eq!(expected_2_3, actual_2_3);
+        assert!(near_eq(expected_determinant, actual_determinant));
+        assert!(near_eq(expected_cofactor1, actual_cofactor1));
+        assert!(near_eq(expected_3_2, actual_3_2));
+        assert!(near_eq(expected_cofactor2, actual_cofactor2));
+        assert!(near_eq(expected_2_3, actual_2_3));
         assert_eq!(expected_matrix, actual_matrix);
     }
 

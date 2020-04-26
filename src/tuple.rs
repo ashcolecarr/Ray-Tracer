@@ -294,7 +294,7 @@ mod tests {
 
         let actual = vector.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
 
         let actual = vector.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -316,7 +316,7 @@ mod tests {
 
         let actual = vector.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -327,7 +327,7 @@ mod tests {
 
         let actual = vector.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod tests {
 
         let actual = vector.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -372,7 +372,7 @@ mod tests {
 
         let actual = normal.magnitude();
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
@@ -384,7 +384,7 @@ mod tests {
 
         let actual = tuple1.dot(tuple2);
 
-        assert_eq!(expected, actual);
+        assert!(near_eq(expected, actual));
     }
 
     #[test]
