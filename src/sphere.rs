@@ -1,4 +1,5 @@
 use super::intersection::Intersection;
+use super::matrix::Matrix;
 use super::ray::Ray;
 use super::tuple::Tuple;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -6,6 +7,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 #[derive(Debug, Clone)]
 pub struct Sphere {
     id: i32,
+    pub transform: Matrix,
 }
 
 impl PartialEq for Sphere {
@@ -20,6 +22,7 @@ impl Sphere {
 
         Self {
             id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
+            transform: Matrix::identity(4),
         }
     }
 
@@ -28,10 +31,14 @@ impl Sphere {
     }
 
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
-        let sphere_to_ray = ray.origin - Tuple::point(0., 0., 0.);
+        let ray_transform = match self.transform.inverse() {
+            Some(i) => ray.transform(i),
+            None => ray,
+        };
+        let sphere_to_ray = ray_transform.origin - Tuple::point(0., 0., 0.);
 
-        let a = ray.direction.dot(ray.direction);
-        let b = 2. * ray.direction.dot(sphere_to_ray);
+        let a = ray_transform.direction.dot(ray_transform.direction);
+        let b = 2. * ray_transform.direction.dot(sphere_to_ray);
         let c = sphere_to_ray.dot(sphere_to_ray) - 1.;
 
         let discriminant = b.powi(2) - 4. * a * c;
@@ -48,13 +55,19 @@ impl Sphere {
             Intersection::new(t2, self.clone()),
         ]
     }
+
+    pub fn set_transform(&mut self, transform: Matrix) {
+        self.transform = transform;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::matrix::Matrix;
     use super::super::near_eq;
     use super::super::ray::Ray;
+    use super::super::transformation::*;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -156,5 +169,57 @@ mod tests {
         assert_eq!(expected_count, actual.len());
         assert_eq!(expected_object1, actual[0].object);
         assert_eq!(expected_object2, actual[1].object);
+    }
+
+    #[test]
+    fn sphere_default_transformation() {
+        let sphere = Sphere::new();
+
+        let expected = Matrix::identity(4);
+
+        let actual = sphere.transform;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn changing_sphere_transformation() {
+        let mut sphere = Sphere::new();
+        let transform =  translate(2., 3., 4.);
+
+        let expected = transform.clone();
+
+        sphere.set_transform(transform);
+        let actual = sphere.transform;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn intersecting_scaled_sphere_with_ray() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let mut sphere = Sphere::new();
+        sphere.set_transform(scale(2., 2., 2.));
+
+        let expected_count = 2;
+        let expected_t1 = 3.;
+        let expected_t2 = 7.;
+
+        let actual = sphere.intersect(ray);
+
+        assert_eq!(expected_count, actual.len());
+        assert_eq!(expected_t1, actual[0].t);
+        assert_eq!(expected_t2, actual[1].t);
+    }
+
+    #[test]
+    fn intersecting_translated_sphere_with_ray() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let mut sphere = Sphere::new();
+        sphere.set_transform(translate(5., 0., 0.));
+
+        let actual = sphere.intersect(ray);
+
+        assert!(actual.is_empty());
     }
 }

@@ -1,8 +1,11 @@
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
 use ray_tracer::Environment;
+use ray_tracer::intersection::Intersection;
 use ray_tracer::near_eq;
 use ray_tracer::Projectile;
+use ray_tracer::ray::Ray;
+use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
 use ray_tracer::tuple::Tuple;
@@ -12,7 +15,8 @@ use std::f64::consts::PI;
 fn main() {
     //draw_projectile();
     //draw_clock();
-    draw_rainbow();
+    draw_circle();
+    //draw_rainbow();
 }
 
 pub fn draw_projectile() {
@@ -64,6 +68,52 @@ pub fn draw_clock() {
     fs::write("clock.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
 
+pub fn draw_circle() {
+    let ray_origin = Tuple::point(0., 0., -5.);
+    let wall_z = 10.;
+    let wall_size = 7.;
+    
+    let canvas_pixels = 100;
+    let pixel_size = wall_size / canvas_pixels as f64;
+    let half = wall_size / 2.;
+    
+    let mut canvas = Canvas::new(canvas_pixels, canvas_pixels);
+    //let mut color;
+    let mut shape = Sphere::new();
+    shape.set_transform(shear(1., 0., 0., 0., 0., 0.) * scale(0.5, 1., 1.));
+    //shape.material = Material::new();
+    //shape.material.color = Color::new(1., 0.2, 1.);
+
+    let light_position = Tuple::point(-10., 10., -10.);
+    let light_color = Color::new(1., 1., 1.);
+    //let light = Light::point_light(light_position, light_color);
+
+    for y in 0..(canvas_pixels - 1) {
+        let world_y = half - pixel_size * y as f64;
+
+        for x in 0..(canvas_pixels - 1) {
+            let world_x = -half + pixel_size * x as f64;
+            let position = Tuple::point(world_x, world_y, wall_z);
+
+            let ray = Ray::new(ray_origin, (position - ray_origin).normalize());
+            let intersections = shape.intersect(ray);
+
+            let hit = Intersection::hit(intersections);
+            if hit.is_some() {
+                //let point = ray.position(hit.unwrap().t);
+                //let eye = -ray.direction;
+                //let normal = hit.unwrap().object.normal_at(point);
+
+                //let material = hit.unwrap().object.material();
+                //color = material.lighting(Shape::Sphere(shape.clone()), light, point, eye, normal, false);
+                //canvas.write_pixel(x as u32, y as u32, color);
+                canvas.write_pixel(x as u32, y as u32, Color::new(1., 0., 0.));
+            }
+        }
+    }
+    
+    fs::write("circle.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
 pub fn draw_rainbow() {
     let mut canvas = Canvas::new(700, 700);
     let red = Color::new(1., 0., 0.);

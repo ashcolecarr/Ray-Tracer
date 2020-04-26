@@ -1,3 +1,4 @@
+use super::matrix::Matrix;
 use super::tuple::Tuple;
 
 #[derive(Debug, Copy, Clone)]
@@ -20,11 +21,19 @@ impl Ray {
     pub fn position(&self, t: f64) -> Tuple {
         self.origin + self.direction * t
     }
+
+    pub fn transform(&self, transformation: Matrix) -> Self {
+        let origin_transform = transformation.clone() * self.origin;
+        let direction_transform = transformation * self.direction;
+
+        Ray::new(origin_transform, direction_transform)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::transformation::*;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -59,5 +68,31 @@ mod tests {
         assert_eq!(expected_position2, actual_position2);
         assert_eq!(expected_position3, actual_position3);
         assert_eq!(expected_position4, actual_position4);
+    }
+
+    #[test]
+    fn translating_ray() {
+        let ray = Ray::new(Tuple::point(1., 2., 3.), Tuple::vector(0., 1., 0.));
+        let transform = translate(3., 4., 5.);
+
+        let expected = Ray::new(Tuple::point(4., 6., 8.), Tuple::vector(0., 1., 0.));
+
+        let actual = ray.transform(transform);
+
+        assert_eq!(expected.origin, actual.origin);
+        assert_eq!(expected.direction, actual.direction);
+    }
+
+    #[test]
+    fn scaling_ray() {
+        let ray = Ray::new(Tuple::point(1., 2., 3.), Tuple::vector(0., 1., 0.));
+        let transform = scale(2., 3., 4.);
+
+        let expected = Ray::new(Tuple::point(2., 6., 12.), Tuple::vector(0., 3., 0.));
+
+        let actual = ray.transform(transform);
+
+        assert_eq!(expected.origin, actual.origin);
+        assert_eq!(expected.direction, actual.direction);
     }
 }
