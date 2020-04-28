@@ -2,6 +2,7 @@ use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
 use ray_tracer::Environment;
 use ray_tracer::intersection::Intersection;
+use ray_tracer::light::Light;
 use ray_tracer::near_eq;
 use ray_tracer::Projectile;
 use ray_tracer::ray::Ray;
@@ -78,15 +79,15 @@ pub fn draw_circle() {
     let half = wall_size / 2.;
     
     let mut canvas = Canvas::new(canvas_pixels, canvas_pixels);
-    //let mut color;
+    let mut color;
     let mut shape = Sphere::new();
-    shape.set_transform(shear(1., 0., 0., 0., 0., 0.) * scale(0.5, 1., 1.));
-    //shape.material = Material::new();
-    //shape.material.color = Color::new(1., 0.2, 1.);
+    //shape.set_transform(shear(1., 0., 0., 0., 0., 0.) * scale(0.5, 1., 1.));
+    shape.material = Default::default();
+    shape.material.color = Color::new(1., 0.2, 1.);
 
     let light_position = Tuple::point(-10., 10., -10.);
     let light_color = Color::new(1., 1., 1.);
-    //let light = Light::point_light(light_position, light_color);
+    let light = Light::point_light(light_position, light_color);
 
     for y in 0..(canvas_pixels - 1) {
         let world_y = half - pixel_size * y as f64;
@@ -100,14 +101,14 @@ pub fn draw_circle() {
 
             let hit = Intersection::hit(intersections);
             if hit.is_some() {
-                //let point = ray.position(hit.unwrap().t);
-                //let eye = -ray.direction;
-                //let normal = hit.unwrap().object.normal_at(point);
+                let point = ray.position(hit.clone().unwrap().t);
+                let normal = hit.clone().unwrap().object.normal_at(point);
+                let eye = -ray.direction;
 
-                //let material = hit.unwrap().object.material();
+                let material = hit.unwrap().object.material;
                 //color = material.lighting(Shape::Sphere(shape.clone()), light, point, eye, normal, false);
-                //canvas.write_pixel(x as u32, y as u32, color);
-                canvas.write_pixel(x as u32, y as u32, Color::new(1., 0., 0.));
+                color = material.lighting(light, point, eye, normal);
+                canvas.write_pixel(x as u32, y as u32, color);
             }
         }
     }

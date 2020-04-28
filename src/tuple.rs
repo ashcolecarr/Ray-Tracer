@@ -51,6 +51,10 @@ impl Tuple {
             (self.z * other.x) - (self.x * other.z), (self.x * other.y) - (self.y * other.x))
     }
 
+    pub fn reflect(&self, normal: Self) -> Self {
+        *self - normal * 2. * self.dot(normal)
+    }
+
     pub fn is_point(&self) -> bool {
         near_eq(1.0, self.w)
     }
@@ -400,5 +404,29 @@ mod tests {
 
         assert_eq!(expected1, actual1);
         assert_eq!(expected2, actual2);
+    }
+
+    #[test]
+    fn reflecting_vector_approaching_at_45deg() {
+        let vector = Tuple::vector(1., -1., 0.);
+        let normal = Tuple::vector(0., 1., 0.);
+
+        let expected = Tuple::vector(1., 1., 0.);
+
+        let actual = vector.reflect(normal);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn reflecting_vector_off_slanted_surface() {
+        let vector = Tuple::vector(0., -1., 0.);
+        let normal = Tuple::vector(2_f64.sqrt() / 2., 2_f64.sqrt() / 2., 0.);
+
+        let expected = Tuple::vector(1., 0., 0.);
+
+        let actual = vector.reflect(normal);
+
+        assert_eq!(expected, actual);
     }
 }
