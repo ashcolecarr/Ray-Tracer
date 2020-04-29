@@ -1,15 +1,18 @@
+use ray_tracer::camera::Camera;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
 use ray_tracer::Environment;
 use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
 use ray_tracer::near_eq;
+use ray_tracer::ORIGIN;
 use ray_tracer::Projectile;
 use ray_tracer::ray::Ray;
 use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
 use ray_tracer::tuple::Tuple;
+use ray_tracer::world::World;
 use std::fs;
 use std::f64::consts::PI;
 
@@ -18,7 +21,8 @@ fn main() {
     //draw_clock();
     //draw_circle();
     //draw_rainbow();
-    draw_dither();
+    //draw_dither();
+    draw_sphere_scene();
 }
 
 pub fn draw_projectile() {
@@ -55,7 +59,7 @@ pub fn draw_projectile() {
 
 pub fn draw_clock() {
     let mut canvas = Canvas::new(400, 400);
-    let origin = Tuple::point(0., 0., 0.);
+    let origin = ORIGIN;
     let clock_radius = (3. / 8.) * (*canvas.get_width() as f64);
 
     let twelve_o_clock = translate(0., 0., 1.) * origin;
@@ -174,4 +178,59 @@ pub fn draw_dither() {
     }
     
     fs::write("dither.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_sphere_scene() {
+    let mut floor = Sphere::new();
+    floor.transform = scale(10., 0.01, 10.);
+    floor.material.color = Color::new(1., 0.9, 0.9);
+    floor.material.specular = 0.;
+
+    let mut left_wall = Sphere::new();
+    left_wall.transform = translate(0., 0., 5.) * rotate(-PI / 4., Axis::Y) * 
+        rotate(PI / 2., Axis::X) * scale(10., 0.01, 10.);
+    left_wall.material = floor.material;
+
+    let mut right_wall = Sphere::new();
+    right_wall.transform = translate(0., 0., 5.) * rotate(PI / 4., Axis::Y) * 
+        rotate(PI / 2., Axis::X) * scale(10., 0.01, 10.);
+    right_wall.material = floor.material;
+
+    let mut middle = Sphere::new();
+    middle.transform = translate(-0.5, 1., 0.5);
+    middle.material.color = Color::new(0.1, 1., 0.5);
+    middle.material.diffuse = 0.7;
+    middle.material.specular = 0.3;
+
+    let mut right = Sphere::new();
+    right.transform = translate(1.5, 0.5, -0.5) * scale(0.5, 0.5, 0.5);
+    right.material.color = Color::new(0.5, 1., 0.1);
+    right.material.diffuse = 0.7;
+    right.material.specular = 0.3;
+
+    let mut left = Sphere::new();
+    left.transform = translate(-1.5, 0.33, -0.75) * scale(0.33, 0.33, 0.33);
+    left.material.color = Color::new(1., 0.8, 0.1);
+    left.material.diffuse = 0.7;
+    left.material.specular = 0.3;
+
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.)));
+    world.objects.push(floor);
+    world.objects.push(left_wall);
+    world.objects.push(right_wall);
+    world.objects.push(middle);
+    world.objects.push(right);
+    world.objects.push(left);
+    //world.objects.push(Shape::Plane(floor));
+    //world.objects.push(Shape::Sphere(middle));
+    //world.objects.push(Shape::Sphere(right));
+    //world.objects.push(Shape::Sphere(left));
+
+    let mut camera = Camera::new(100, 50, PI / 3.);
+    camera.transform = view_transform(Tuple::point(0., 1.5, -5.), Tuple::point(0., 1., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("spheres.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

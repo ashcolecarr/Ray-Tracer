@@ -70,6 +70,7 @@ mod tests {
     use super::*;
     use super::super::computations::Computations;
     use super::super::near_eq;
+    use super::super::ORIGIN;
     use super::super::ray::Ray;
     use super::super::sphere::Sphere;
     use super::super::tuple::Tuple;
@@ -193,7 +194,7 @@ mod tests {
 
     #[test]
     fn hit_when_intersection_occurs_on_inside() {
-        let ray = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+        let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let shape = Sphere::new();
         let intersection = Intersection { t: 1., object: shape.clone() };
 

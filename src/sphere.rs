@@ -1,6 +1,7 @@
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
+use super::ORIGIN;
 use super::ray::Ray;
 use super::tuple::Tuple;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -39,7 +40,7 @@ impl Sphere {
             Some(i) => ray.transform(i),
             None => ray,
         };
-        let sphere_to_ray = ray_transform.origin - Tuple::point(0., 0., 0.);
+        let sphere_to_ray = ray_transform.origin - ORIGIN;
 
         let a = ray_transform.direction.dot(ray_transform.direction);
         let b = 2. * ray_transform.direction.dot(sphere_to_ray);
@@ -67,7 +68,7 @@ impl Sphere {
     pub fn normal_at(&self, world_point: Tuple) -> Tuple {
         let inverse = self.transform.inverse().unwrap();
         let object_point = inverse.clone() * world_point;
-        let object_normal = object_point - Tuple::point(0., 0., 0.);
+        let object_normal = object_point - ORIGIN;
 
         let mut world_normal = inverse.transpose() * object_normal;
         world_normal.w = 0.;
@@ -82,6 +83,7 @@ mod tests {
     use super::super::material::Material;
     use super::super::matrix::Matrix;
     use super::super::near_eq;
+    use super::super::ORIGIN;
     use super::super::ray::Ray;
     use super::super::transformation::*;
     use super::super::tuple::Tuple;
@@ -142,7 +144,7 @@ mod tests {
 
     #[test]
     fn ray_originates_inside_sphere() {
-        let ray = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+        let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let sphere = Sphere::new();
         
         let expected_count = 2;

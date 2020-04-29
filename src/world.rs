@@ -76,6 +76,7 @@ impl World {
 mod tests {
     use super::*;
     use super::super::color::Color;
+    use super::super::ORIGIN;
     use super::super::ray::Ray;
     use super::super::tuple::Tuple;
 
@@ -147,7 +148,7 @@ mod tests {
     fn shading_intersection_from_inside() {
         let mut world: World = Default::default();
         world.lights[0] = Light::point_light(Tuple::point(0., 0.25, 0.), Color::new(1., 1., 1.));
-        let ray = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+        let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let shape = world.objects[1].clone();
         let intersection = Intersection::new(0.5, shape);
         let computations = intersection.prepare_computations(ray);

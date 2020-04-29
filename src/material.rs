@@ -68,6 +68,7 @@ mod tests {
     use super::*;
     use super::super::color::Color;
     use super::super::light::Light;
+    use super::super::ORIGIN;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -90,7 +91,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_between_light_and_surface() {
         let material: Material = Default::default();
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = Light::point_light(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
@@ -105,7 +106,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_between_light_and_surface_eye_offset_45deg() {
         let material: Material = Default::default();
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = Light::point_light(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
@@ -120,7 +121,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_opposite_surface_light_offset_45deg() {
         let material: Material = Default::default();
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = Light::point_light(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
@@ -135,7 +136,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_in_path_of_reflection_vector() {
         let material: Material = Default::default();
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
         let eye_vector = Tuple::vector(0., -2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = Light::point_light(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
@@ -150,7 +151,7 @@ mod tests {
     #[test]
     fn lighting_with_light_behind_surface() {
         let material: Material = Default::default();
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = Light::point_light(Tuple::point(0., 0., 10.), Color::new(1., 1., 1.));

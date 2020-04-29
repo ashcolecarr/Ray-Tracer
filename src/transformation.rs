@@ -82,6 +82,7 @@ pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Matrix {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::ORIGIN;
     use super::super::tuple::Tuple;
     use std::f64::consts::PI;
 
@@ -341,7 +342,7 @@ mod tests {
 
     #[test]
     fn transformation_matrix_for_default_orientation() {
-        let from = Tuple::point(0., 0., 0.);
+        let from = ORIGIN;
         let to = Tuple::point(0., 0., -1.);
         let up = Tuple::vector(0., 1., 0.);
 
@@ -354,7 +355,7 @@ mod tests {
 
     #[test]
     fn view_transformation_matrix_looking_in_positive_z_direction() {
-        let from = Tuple::point(0., 0., 0.);
+        let from = ORIGIN;
         let to = Tuple::point(0., 0., 1.);
         let up = Tuple::vector(0., 1., 0.);
 
@@ -368,7 +369,7 @@ mod tests {
     #[test]
     fn view_transformation_moves_world() {
         let from = Tuple::point(0., 0., 8.);
-        let to = Tuple::point(0., 0., 0.);
+        let to = ORIGIN;
         let up = Tuple::vector(0., 1., 0.);
 
         let expected = translate(0., 0., -8.);

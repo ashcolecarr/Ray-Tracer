@@ -23,12 +23,12 @@ impl Light {
 mod tests {
     use super::*;
     use super::super::color::Color;
-    use super::super::tuple::Tuple;
+    use super::super::ORIGIN;
 
     #[test]
     fn point_light_has_position_and_intensity() {
         let intensity = Color::new(1., 1., 1.);
-        let position = Tuple::point(0., 0., 0.);
+        let position = ORIGIN;
 
         let expected_position = position;
         let expected_intensity = intensity;
