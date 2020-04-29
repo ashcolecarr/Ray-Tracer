@@ -1,4 +1,5 @@
 use super::matrix::Matrix;
+use super::tuple::Tuple;
 
 pub enum Axis {
     X,
@@ -61,6 +62,21 @@ pub fn shear(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matr
     matrix[2][1] = z_y;
 
     matrix
+}
+
+pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Matrix {
+    let forward = (to - from).normalize();
+    let up_normal = up.normalize();
+    let left = forward.cross(up_normal);
+    let true_up = left.cross(forward);
+
+    let orientation = Matrix::new(4, 4, vec![
+        left.x, left.y, left.z, 0., 
+        true_up.x, true_up.y, true_up.z, 0.,
+        -forward.x, -forward.y, -forward.z, 0.,
+        0., 0., 0., 1.]);
+    
+    orientation * translate(-from.x, -from.y, -from.z)
 }
 
 #[cfg(test)]
@@ -319,6 +335,62 @@ mod tests {
         let expected = Tuple::point(15., 0., 7.);
 
         let actual = transformation * point;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn transformation_matrix_for_default_orientation() {
+        let from = Tuple::point(0., 0., 0.);
+        let to = Tuple::point(0., 0., -1.);
+        let up = Tuple::vector(0., 1., 0.);
+
+        let expected = Matrix::identity(4);
+
+        let actual = view_transform(from, to, up);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn view_transformation_matrix_looking_in_positive_z_direction() {
+        let from = Tuple::point(0., 0., 0.);
+        let to = Tuple::point(0., 0., 1.);
+        let up = Tuple::vector(0., 1., 0.);
+
+        let expected = scale(-1., 1., -1.);
+
+        let actual = view_transform(from, to, up);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn view_transformation_moves_world() {
+        let from = Tuple::point(0., 0., 8.);
+        let to = Tuple::point(0., 0., 0.);
+        let up = Tuple::vector(0., 1., 0.);
+
+        let expected = translate(0., 0., -8.);
+
+        let actual = view_transform(from, to, up);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn arbitrary_view_transformation() {
+        let from = Tuple::point(1., 3., 2.);
+        let to = Tuple::point(4., -2., 8.);
+        let up = Tuple::vector(1., 1., 0.);
+
+        let values = vec![-0.50709, 0.50709, 0.67612, -2.36643, 
+            0.76772, 0.60609, 0.12122, -2.82843,
+            -0.35857, 0.59761, -0.71714, 0.,
+            0., 0., 0., 1.]; 
+        let expected = Matrix::new(4, 4, values);
+
+        let actual = view_transform(from, to, up);
 
         assert_eq!(expected, actual);
     }

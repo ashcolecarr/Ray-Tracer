@@ -1,5 +1,6 @@
 use super::near_eq;
 use std::ops::Add;
+use std::ops::AddAssign;
 use std::ops::Sub;
 use std::ops::Mul;
 
@@ -32,6 +33,16 @@ impl Add for Color {
             green: self.green + other.green,
             blue: self.blue + other.blue
         }
+    }
+}
+
+impl AddAssign for Color {
+    fn add_assign(&mut self, other: Self) {
+        *self = Self {
+            red: self.red + other.red,
+            green: self.green + other.green,
+            blue: self.blue + other.blue,
+        };
     }
 }
 

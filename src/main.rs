@@ -16,8 +16,9 @@ use std::f64::consts::PI;
 fn main() {
     //draw_projectile();
     //draw_clock();
-    draw_circle();
+    //draw_circle();
     //draw_rainbow();
+    draw_dither();
 }
 
 pub fn draw_projectile() {
@@ -81,7 +82,6 @@ pub fn draw_circle() {
     let mut canvas = Canvas::new(canvas_pixels, canvas_pixels);
     let mut color;
     let mut shape = Sphere::new();
-    //shape.set_transform(shear(1., 0., 0., 0., 0., 0.) * scale(0.5, 1., 1.));
     shape.material = Default::default();
     shape.material.color = Color::new(1., 0.2, 1.);
 
@@ -115,6 +115,7 @@ pub fn draw_circle() {
     
     fs::write("circle.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
+
 pub fn draw_rainbow() {
     let mut canvas = Canvas::new(700, 700);
     let red = Color::new(1., 0., 0.);
@@ -141,4 +142,36 @@ pub fn draw_rainbow() {
     }
     
     fs::write("rainbow.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_dither() {
+    let mut canvas = Canvas::new(100, 100);
+    let red = Color::new(1., 0., 0.);
+    let yellow = Color::new(1., 1., 0.);
+    //let sky_blue = Color::new(0.52941, 0.80784, 0.92157);
+    //let pale_green = Color::new(0.59608, 0.98431, 0.59608);
+
+    for y in 0..*canvas.get_height() {
+        for x in 0..*canvas.get_width() {
+            match y % 2 {
+                0 => {
+                    match x % 2 {
+                        0 => canvas.write_pixel(x as u32, y as u32, red),
+                        1 => canvas.write_pixel(x as u32, y as u32, yellow),
+                        _ => (),
+                    }
+                },
+                1 => {
+                    match x % 2 {
+                        0 => canvas.write_pixel(x as u32, y as u32, yellow),
+                        1 => canvas.write_pixel(x as u32, y as u32, red),
+                        _ => (),
+                    }
+                },
+                _ => (),
+            }
+        }
+    }
+    
+    fs::write("dither.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

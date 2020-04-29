@@ -14,7 +14,8 @@ pub struct Sphere {
 
 impl PartialEq for Sphere {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.id == other.id && self.transform == other.transform &&
+            self.material == other.material
     }
 }
 

@@ -1,4 +1,6 @@
+use super::computations::Computations;
 use super::near_eq;
+use super::ray::Ray;
 use super::sphere::Sphere;
 
 #[derive(Debug, Clone)]
@@ -25,6 +27,28 @@ impl Intersection {
             None => None
         }
     }
+
+    pub fn prepare_computations(&self, ray: Ray) -> Computations {
+        let point = ray.position(self.t);
+        let mut normal_vector = self.object.normal_at(point);
+        let eye_vector = -ray.direction;
+
+        let inside = if normal_vector.dot(eye_vector) < 0. {
+            normal_vector = -normal_vector;
+            true
+        } else {
+            false
+        };
+
+        Computations {
+            t: self.t,
+            object: self.object.clone(),
+            point,
+            eye_vector,
+            normal_vector,
+            inside, 
+        }
+    }
 }
 
 #[macro_export]
@@ -44,8 +68,11 @@ macro_rules! intersections {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::computations::Computations;
     use super::super::near_eq;
+    use super::super::ray::Ray;
     use super::super::sphere::Sphere;
+    use super::super::tuple::Tuple;
 
     #[test]
     fn intersection_encapsulates_t_and_object() {
@@ -130,6 +157,58 @@ mod tests {
 
         let actual = Intersection::hit(intersections).unwrap();
 
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn precomputing_state_of_intersection() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let shape = Sphere::new();
+        let intersection = Intersection { t: 4., object: shape.clone() };
+
+        let expected = Computations {
+            t: 4.,
+            object: shape,
+            point: Tuple::point(0., 0., -1.),
+            eye_vector: Tuple::vector(0., 0., -1.),
+            normal_vector: Tuple::vector(0., 0., -1.),
+            inside: false,
+        };
+
+        let actual = intersection.prepare_computations(ray);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn hit_when_intersection_occurs_on_outside() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let shape = Sphere::new();
+        let intersection = Intersection { t: 4., object: shape.clone() };
+
+        let actual = intersection.prepare_computations(ray);
+
+        assert!(!actual.inside);
+    }
+
+    #[test]
+    fn hit_when_intersection_occurs_on_inside() {
+        let ray = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+        let shape = Sphere::new();
+        let intersection = Intersection { t: 1., object: shape.clone() };
+
+        let expected = Computations {
+            t: 1.,
+            object: shape,
+            point: Tuple::point(0., 0., 1.),
+            eye_vector: Tuple::vector(0., 0., -1.),
+            normal_vector: Tuple::vector(0., 0., -1.),
+            inside: true,
+        };
+
+        let actual = intersection.prepare_computations(ray);
+
+        assert!(actual.inside);
         assert_eq!(expected, actual);
     }
 }

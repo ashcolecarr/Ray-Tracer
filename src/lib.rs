@@ -1,5 +1,7 @@
+pub mod camera;
 pub mod canvas;
 pub mod color;
+pub mod computations;
 pub mod intersection;
 pub mod light;
 pub mod material;
@@ -8,6 +10,7 @@ pub mod ray;
 pub mod sphere;
 pub mod transformation;
 pub mod tuple;
+pub mod world;
 
 use color::Color;
 use tuple::Tuple;

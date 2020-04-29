@@ -7,6 +7,12 @@ pub struct Light {
     pub intensity: Color,
 }
 
+impl PartialEq for Light {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position && self.intensity == other.intensity
+    }
+}
+
 impl Light {
     pub fn point_light(position: Tuple, intensity: Color) -> Self {
         Light { position, intensity }
