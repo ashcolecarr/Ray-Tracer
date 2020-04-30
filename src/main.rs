@@ -12,6 +12,7 @@ use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
 use ray_tracer::tuple::Tuple;
+use ray_tracer::WHITE;
 use ray_tracer::world::World;
 use std::fs;
 use std::f64::consts::PI;
@@ -23,6 +24,7 @@ fn main() {
     //draw_rainbow();
     //draw_dither();
     draw_sphere_scene();
+    //draw_sphere_spiral();
 }
 
 pub fn draw_projectile() {
@@ -90,7 +92,7 @@ pub fn draw_circle() {
     shape.material.color = Color::new(1., 0.2, 1.);
 
     let light_position = Tuple::point(-10., 10., -10.);
-    let light_color = Color::new(1., 1., 1.);
+    let light_color = WHITE;
     let light = Light::point_light(light_position, light_color);
 
     for y in 0..(canvas_pixels - 1) {
@@ -111,7 +113,7 @@ pub fn draw_circle() {
 
                 let material = hit.unwrap().object.material;
                 //color = material.lighting(Shape::Sphere(shape.clone()), light, point, eye, normal, false);
-                color = material.lighting(light, point, eye, normal);
+                color = material.lighting(light, point, eye, normal, false);
                 canvas.write_pixel(x as u32, y as u32, color);
             }
         }
@@ -215,7 +217,8 @@ pub fn draw_sphere_scene() {
     left.material.specular = 0.3;
 
     let mut world = World::new();
-    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.)));
+    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
+    world.lights.push(Light::point_light(Tuple::point(10., 10., -10.), Color::new(0.5, 0.5, 0.5)));
     world.objects.push(floor);
     world.objects.push(left_wall);
     world.objects.push(right_wall);
@@ -233,4 +236,24 @@ pub fn draw_sphere_scene() {
     let canvas = camera.render(world);
 
     fs::write("spheres.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_sphere_spiral() {
+    let mut sphere1 = Sphere::new();
+    sphere1.material.color = Color::new(1., 0., 0.);
+    let mut sphere2 = Sphere::new();
+    sphere2.transform = translate(-1.5, 0., 1.);
+    sphere2.material.color = Color::new(1., 1., 0.);
+
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
+    world.objects.push(sphere1);
+    world.objects.push(sphere2);
+    
+    let mut camera = Camera::new(100, 50, PI / 3.);
+    camera.transform = view_transform(Tuple::point(0., 2., -0.5), Tuple::point(0., -1., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("sphere_spiral.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

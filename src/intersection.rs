@@ -1,4 +1,5 @@
 use super::computations::Computations;
+use super::EPSILON;
 use super::near_eq;
 use super::ray::Ray;
 use super::sphere::Sphere;
@@ -40,6 +41,8 @@ impl Intersection {
             false
         };
 
+        let over_point = point + normal_vector * EPSILON;
+
         Computations {
             t: self.t,
             object: self.object.clone(),
@@ -47,6 +50,7 @@ impl Intersection {
             eye_vector,
             normal_vector,
             inside, 
+            over_point,
         }
     }
 }
@@ -69,10 +73,12 @@ macro_rules! intersections {
 mod tests {
     use super::*;
     use super::super::computations::Computations;
+    use super::super::EPSILON;
     use super::super::near_eq;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
     use super::super::sphere::Sphere;
+    use super::super::transformation::*;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -174,6 +180,7 @@ mod tests {
             eye_vector: Tuple::vector(0., 0., -1.),
             normal_vector: Tuple::vector(0., 0., -1.),
             inside: false,
+            over_point: Tuple::point(0., 0., -1.) + Tuple::vector(0., 0., -1.) * EPSILON,
         };
 
         let actual = intersection.prepare_computations(ray);
@@ -205,11 +212,24 @@ mod tests {
             eye_vector: Tuple::vector(0., 0., -1.),
             normal_vector: Tuple::vector(0., 0., -1.),
             inside: true,
+            over_point: Tuple::point(0., 0., 1.) + (Tuple::vector(0., 0., -1.) * EPSILON),
         };
 
         let actual = intersection.prepare_computations(ray);
 
         assert!(actual.inside);
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn hit_shold_offset_point() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let mut shape = Sphere::new();
+        shape.transform = translate(0., 0., 1.);
+        let intersection = Intersection::new(5., shape);
+        let actual = intersection.prepare_computations(ray);
+
+        assert!(actual.over_point.z < -EPSILON / 2.);
+        assert!(actual.point.z > actual.over_point.z);
     }
 }

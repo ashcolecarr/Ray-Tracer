@@ -3,6 +3,7 @@ use super::color::Color;
 use super::light::Light;
 use super::near_eq;
 use super::tuple::Tuple;
+use super::WHITE;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Material {
@@ -16,7 +17,7 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         Material {
-            color: Color::new(1., 1., 1.),
+            color: WHITE,
             ambient: 0.1,
             diffuse: 0.9,
             specular: 0.9,
@@ -34,7 +35,7 @@ impl PartialEq for Material {
 }
 
 impl Material {
-    pub fn lighting(&self, light: Light, point: Tuple, eye_vector: Tuple, normal_vector: Tuple) -> Color {
+    pub fn lighting(&self, light: Light, point: Tuple, eye_vector: Tuple, normal_vector: Tuple, in_shadow: bool) -> Color {
         let effective_color = self.color * light.intensity;
         let light_vector = (light.position - point).normalize();
         let ambient = effective_color * self.ambient;
@@ -59,7 +60,7 @@ impl Material {
             }
         }
 
-        ambient + diffuse + specular
+        if in_shadow { ambient } else { ambient + diffuse + specular }
     }
 }
 
@@ -70,10 +71,11 @@ mod tests {
     use super::super::light::Light;
     use super::super::ORIGIN;
     use super::super::tuple::Tuple;
+    use super::super::WHITE;
 
     #[test]
     fn default_material() {
-        let expected_color = Color::new(1., 1., 1.);
+        let expected_color = WHITE;
         let expected_ambient = 0.1;
         let expected_diffuse = 0.9;
         let expected_specular = 0.9;
@@ -94,11 +96,11 @@ mod tests {
         let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
-        let light = Light::point_light(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(0., 0., -10.), WHITE);
 
         let expected = Color::new(1.9, 1.9, 1.9);
 
-        let actual = material.lighting(light, position, eye_vector, normal_vector);
+        let actual = material.lighting(light, position, eye_vector, normal_vector, false);
 
         assert_eq!(expected, actual);
     }
@@ -109,11 +111,11 @@ mod tests {
         let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
-        let light = Light::point_light(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(0., 0., -10.), WHITE);
 
-        let expected = Color::new(1., 1., 1.);
+        let expected = WHITE;
 
-        let actual = material.lighting(light, position, eye_vector, normal_vector);
+        let actual = material.lighting(light, position, eye_vector, normal_vector, false);
 
         assert_eq!(expected, actual);
     }
@@ -124,11 +126,11 @@ mod tests {
         let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
-        let light = Light::point_light(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(0., 10., -10.), WHITE);
 
         let expected = Color::new(0.7364, 0.7364, 0.7364);
 
-        let actual = material.lighting(light, position, eye_vector, normal_vector);
+        let actual = material.lighting(light, position, eye_vector, normal_vector, false);
 
         assert_eq!(expected, actual);
     }
@@ -139,11 +141,11 @@ mod tests {
         let position = ORIGIN;
         let eye_vector = Tuple::vector(0., -2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
-        let light = Light::point_light(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(0., 10., -10.), WHITE);
 
         let expected = Color::new(1.6364, 1.6364, 1.6364);
 
-        let actual = material.lighting(light, position, eye_vector, normal_vector);
+        let actual = material.lighting(light, position, eye_vector, normal_vector, false);
 
         assert_eq!(expected, actual);
     }
@@ -154,11 +156,27 @@ mod tests {
         let position = ORIGIN;
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
-        let light = Light::point_light(Tuple::point(0., 0., 10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(0., 0., 10.), WHITE);
 
         let expected = Color::new(0.1, 0.1, 0.1);
 
-        let actual = material.lighting(light, position, eye_vector, normal_vector);
+        let actual = material.lighting(light, position, eye_vector, normal_vector, false);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn lighting_with_surface_in_shadow() {
+        let material: Material = Default::default();
+        let position = ORIGIN;
+        let eye_vector = Tuple::vector(0., 0., -1.);
+        let normal_vector = Tuple::vector(0., 0., -1.);
+        let light = Light::point_light(Tuple::point(0., 0., -10.), WHITE);
+        let in_shadow = true;
+
+        let expected = Color::new(0.1, 0.1, 0.1);
+
+        let actual = material.lighting(light, position, eye_vector, normal_vector, in_shadow);
 
         assert_eq!(expected, actual);
     }

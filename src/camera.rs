@@ -40,10 +40,21 @@ impl Camera {
         let world_x = self.half_width - x_offset;
         let world_y = self.half_height - y_offset;
 
-        let pixel = self.transform.inverse().unwrap() * Tuple::point(world_x, world_y, -1.);
-        let origin = self.transform.inverse().unwrap() * ORIGIN;
-        let direction = (pixel - origin).normalize();
+        if self.transform.inverse().is_none() {
+            return Ray::new(ORIGIN, ORIGIN);
+        }
 
+        let inverted_transform = self.transform.inverse();
+        let (origin, direction) = if inverted_transform.is_none() {
+            (ORIGIN, ORIGIN)
+        } else {
+            let pixel = inverted_transform.clone().unwrap() * Tuple::point(world_x, world_y, -1.);
+            let origin = inverted_transform.unwrap() * ORIGIN;
+            let direction = (pixel - origin).normalize();
+
+            (origin, direction)
+        };
+        
         Ray::new(origin, direction)
     }
 

@@ -7,6 +7,7 @@ use super::ray::Ray;
 use super::sphere::Sphere;
 use super::transformation::*;
 use super::tuple::Tuple;
+use super::WHITE;
 
 pub struct World {
     pub objects: Vec<Sphere>,
@@ -15,7 +16,7 @@ pub struct World {
 
 impl Default for World {
     fn default() -> Self {
-        let light = Light::point_light(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
+        let light = Light::point_light(Tuple::point(-10., 10., -10.), WHITE);
 
         let mut sphere1 = Sphere::new();
         sphere1.material.color = Color::new(0.8, 1., 0.6);
@@ -50,11 +51,12 @@ impl World {
 
     pub fn shade_hit(&self, computations: Computations) -> Color {
         let mut color = BLACK;
+        let shadowed = self.is_shadowed(computations.over_point);
 
-        for light in &self.lights {
+        for (light, shadow) in self.lights.iter().zip(shadowed) {
             color += computations.object.material.lighting(*light, 
-                computations.point, computations.eye_vector, 
-                computations.normal_vector)
+                computations.over_point, computations.eye_vector, 
+                computations.normal_vector, shadow);
         }
 
         color
@@ -69,6 +71,23 @@ impl World {
         } else {
             self.shade_hit(hit.unwrap().prepare_computations(ray))
         }
+    }
+
+    pub fn is_shadowed(&self, point: Tuple) -> Vec<bool> {
+        self.lights.iter().map(|light| {
+            let vector = light.position - point;
+            let distance = vector.magnitude();
+            let direction = vector.normalize();
+
+            let ray = Ray::new(point, direction);
+            let intersections = self.intersect_world(ray);
+
+            let hit = Intersection::hit(intersections);
+            match hit {
+                Some(hit) => hit.t < distance,
+                None => false,
+            }
+        }).collect::<Vec<bool>>()
     }
 }
 
@@ -90,7 +109,7 @@ mod tests {
 
     #[test]
     fn default_world() {
-        let expected_light = Light::point_light(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
+        let expected_light = Light::point_light(Tuple::point(-10., 10., -10.), WHITE);
 
         let mut expected_sphere1 = Sphere::new();
         expected_sphere1.material.color = Color::new(0.8, 1., 0.6);
@@ -147,7 +166,7 @@ mod tests {
     #[test]
     fn shading_intersection_from_inside() {
         let mut world: World = Default::default();
-        world.lights[0] = Light::point_light(Tuple::point(0., 0.25, 0.), Color::new(1., 1., 1.));
+        world.lights[0] = Light::point_light(Tuple::point(0., 0.25, 0.), WHITE);
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let shape = world.objects[1].clone();
         let intersection = Intersection::new(0.5, shape);
@@ -194,6 +213,58 @@ mod tests {
         let expected = world.objects[1].material.color;
 
         let actual = world.color_at(ray);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn there_is_no_shadow_when_nothing_is_collinear_with_point_and_light() {
+        let world: World = Default::default();
+        let point = Tuple::point(0., 10., 0.);
+
+        assert!(!world.is_shadowed(point)[0]);
+    }
+
+    #[test]
+    fn shadow_when_object_is_between_point_and_light() {
+        let world: World = Default::default();
+        let point = Tuple::point(10., -10., 10.);
+
+        assert!(world.is_shadowed(point)[0]);
+    }
+
+    #[test]
+    fn there_is_no_shadow_when_object_is_behind_light() {
+        let world: World = Default::default();
+        let point = Tuple::point(-20., 20., -20.);
+
+        assert!(!world.is_shadowed(point)[0]);
+    }
+
+    #[test]
+    fn there_is_no_shadow_when_object_is_behind_point() {
+        let world: World = Default::default();
+        let point = Tuple::point(-2., 2., -2.);
+
+        assert!(!world.is_shadowed(point)[0]);
+    }
+
+    #[test]
+    fn shade_hit_is_given_intersection_in_shadow() {
+        let mut world = World::new();
+        world.lights.push(Light::point_light(Tuple::point(0., 0., -10.), WHITE));
+        let sphere1 = Sphere::new();
+        world.objects.push(sphere1);
+        let mut sphere2 = Sphere::new();
+        sphere2.transform = translate(0., 0., 10.);
+        world.objects.push(sphere2.clone());
+        let ray = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
+        let intersection = Intersection::new(4., sphere2);
+        let computations = intersection.prepare_computations(ray);
+
+        let expected = Color::new(0.1, 0.1, 0.1);
+
+        let actual = world.shade_hit(computations);
 
         assert_eq!(expected, actual);
     }

@@ -22,12 +22,12 @@ impl Light {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::color::Color;
     use super::super::ORIGIN;
+    use super::super::WHITE;
 
     #[test]
     fn point_light_has_position_and_intensity() {
-        let intensity = Color::new(1., 1., 1.);
+        let intensity = WHITE;
         let position = ORIGIN;
 
         let expected_position = position;

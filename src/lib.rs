@@ -16,6 +16,7 @@ use color::Color;
 use tuple::Tuple;
 
 pub const BLACK: Color = Color { red: 0., green: 0., blue: 0. };
+pub const WHITE: Color = Color { red: 1., green: 1., blue: 1. };
 pub const EPSILON: f64 = 0.00001;
 pub const ORIGIN: Tuple = Tuple { x: 0., y: 0., z: 0., w: 1. };
 
