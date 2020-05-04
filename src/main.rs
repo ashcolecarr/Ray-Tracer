@@ -4,10 +4,13 @@ use ray_tracer::color::Color;
 use ray_tracer::Environment;
 use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
+use ray_tracer::material::Material;
 use ray_tracer::near_eq;
 use ray_tracer::ORIGIN;
+use ray_tracer::plane::Plane;
 use ray_tracer::Projectile;
 use ray_tracer::ray::Ray;
+use ray_tracer::shape::{Shape, Actionable};
 use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
@@ -23,8 +26,8 @@ fn main() {
     //draw_circle();
     //draw_rainbow();
     //draw_dither();
-    draw_sphere_scene();
-    //draw_sphere_spiral();
+    //draw_sphere_scene();
+    draw_room_scene();
 }
 
 pub fn draw_projectile() {
@@ -111,7 +114,7 @@ pub fn draw_circle() {
                 let normal = hit.clone().unwrap().object.normal_at(point);
                 let eye = -ray.direction;
 
-                let material = hit.unwrap().object.material;
+                let material = hit.unwrap().object.get_material();
                 //color = material.lighting(Shape::Sphere(shape.clone()), light, point, eye, normal, false);
                 color = material.lighting(light, point, eye, normal, false);
                 canvas.write_pixel(x as u32, y as u32, color);
@@ -154,8 +157,6 @@ pub fn draw_dither() {
     let mut canvas = Canvas::new(100, 100);
     let red = Color::new(1., 0., 0.);
     let yellow = Color::new(1., 1., 0.);
-    //let sky_blue = Color::new(0.52941, 0.80784, 0.92157);
-    //let pale_green = Color::new(0.59608, 0.98431, 0.59608);
 
     for y in 0..*canvas.get_height() {
         for x in 0..*canvas.get_width() {
@@ -219,16 +220,12 @@ pub fn draw_sphere_scene() {
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
     world.lights.push(Light::point_light(Tuple::point(10., 10., -10.), Color::new(0.5, 0.5, 0.5)));
-    world.objects.push(floor);
-    world.objects.push(left_wall);
-    world.objects.push(right_wall);
-    world.objects.push(middle);
-    world.objects.push(right);
-    world.objects.push(left);
-    //world.objects.push(Shape::Plane(floor));
-    //world.objects.push(Shape::Sphere(middle));
-    //world.objects.push(Shape::Sphere(right));
-    //world.objects.push(Shape::Sphere(left));
+    world.objects.push(Shape::Sphere(floor));
+    world.objects.push(Shape::Sphere(left_wall));
+    world.objects.push(Shape::Sphere(right_wall));
+    world.objects.push(Shape::Sphere(middle));
+    world.objects.push(Shape::Sphere(right));
+    world.objects.push(Shape::Sphere(left));
 
     let mut camera = Camera::new(100, 50, PI / 3.);
     camera.transform = view_transform(Tuple::point(0., 1.5, -5.), Tuple::point(0., 1., 0.), Tuple::vector(0., 1., 0.));
@@ -247,8 +244,8 @@ pub fn draw_sphere_spiral() {
 
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
-    world.objects.push(sphere1);
-    world.objects.push(sphere2);
+    world.objects.push(Shape::Sphere(sphere1));
+    world.objects.push(Shape::Sphere(sphere2));
     
     let mut camera = Camera::new(100, 50, PI / 3.);
     camera.transform = view_transform(Tuple::point(0., 2., -0.5), Tuple::point(0., -1., 0.), Tuple::vector(0., 1., 0.));
@@ -256,4 +253,69 @@ pub fn draw_sphere_spiral() {
     let canvas = camera.render(world);
 
     fs::write("sphere_spiral.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_room_scene() {
+    let mut floor_material: Material = Default::default();
+    floor_material.ambient = 0.;
+    floor_material.diffuse = 0.4;
+    floor_material.specular = 0.;
+    floor_material.shininess = 50.;
+    let mut floor = Shape::Plane(Plane::new());
+    floor.set_material(floor_material);
+
+    let mut wall_material: Material = Default::default();
+    wall_material.ambient = 0.1;
+    wall_material.diffuse = 0.4;
+    wall_material.specular = 0.;
+    wall_material.shininess = 50.;
+    wall_material.color = Color::new(0., 1., 1.);
+
+    let mut north_wall = Shape::Plane(Plane::new());
+    north_wall.set_material(wall_material);
+    north_wall.set_transform(translate(0., 0., 2.) * rotate(PI / 2., Axis::X));
+    
+    let mut south_wall = Shape::Plane(Plane::new());
+    south_wall.set_material(wall_material);
+    south_wall.set_transform(translate(0., 0., -2.) * rotate(PI / 2., Axis::X));
+
+    let mut northeast_wall = Shape::Plane(Plane::new());
+    northeast_wall.set_material(wall_material);
+    northeast_wall.set_transform(translate(0., 0., 3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+
+    let mut southeast_wall = Shape::Plane(Plane::new());
+    southeast_wall.set_material(wall_material);
+    southeast_wall.set_transform(translate(0., 0., -3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+
+    let mut northwest_wall = Shape::Plane(Plane::new());
+    northwest_wall.set_material(wall_material);
+    northwest_wall.set_transform(translate(0., 0., 3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+
+    let mut southwest_wall = Shape::Plane(Plane::new());
+    southwest_wall.set_material(wall_material);
+    southwest_wall.set_transform(translate(0., 0., -3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+
+    let mut sphere_material: Material = Default::default();
+    sphere_material.color = Color::new(0.8, 0.4, 0.);
+    let mut sphere = Shape::Sphere(Sphere::new());
+    sphere.set_material(sphere_material);
+    sphere.set_transform(translate(0., 1., 0.) * scale(1., 1., 1.));
+    
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), WHITE));
+    world.objects.push(floor);
+    world.objects.push(sphere);
+    world.objects.push(north_wall);
+    world.objects.push(south_wall);
+    world.objects.push(northeast_wall);
+    world.objects.push(southeast_wall);
+    world.objects.push(northwest_wall);
+    world.objects.push(southwest_wall);
+    
+    let mut camera = Camera::new(100, 100, PI / 2.);
+    camera.transform = view_transform(Tuple::point(0., 4., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("room_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

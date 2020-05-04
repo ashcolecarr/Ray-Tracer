@@ -2,12 +2,12 @@ use super::computations::Computations;
 use super::EPSILON;
 use super::near_eq;
 use super::ray::Ray;
-use super::sphere::Sphere;
+use super::shape::{Shape, Actionable};
 
 #[derive(Debug, Clone)]
 pub struct Intersection {
     pub t: f64,
-    pub object: Sphere,
+    pub object: Shape,
 }
 
 impl PartialEq for Intersection {
@@ -17,7 +17,7 @@ impl PartialEq for Intersection {
 }
 
 impl Intersection {
-    pub fn new(t: f64, object: Sphere) -> Self {
+    pub fn new(t: f64, object: Shape) -> Self {
         Self { t, object }
     }
 
@@ -77,13 +77,14 @@ mod tests {
     use super::super::near_eq;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
+    use super::super::shape::Shape;
     use super::super::sphere::Sphere;
     use super::super::transformation::*;
     use super::super::tuple::Tuple;
 
     #[test]
     fn intersection_encapsulates_t_and_object() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
 
         let expected_t = 3.5;
         let expected_object = sphere.clone();
@@ -96,7 +97,7 @@ mod tests {
 
     #[test]
     fn aggregating_intersections() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
         let intersection1 = Intersection::new(1., sphere.clone());
         let intersection2 = Intersection::new(2., sphere.clone());
 
@@ -113,7 +114,7 @@ mod tests {
 
     #[test]
     fn hit_when_all_intersections_have_positive_t() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
         let intersection1 = Intersection::new(1., sphere.clone());
         let intersection2 = Intersection::new(2., sphere.clone());
         let intersections = intersections!(intersection2, intersection1.clone());
@@ -127,7 +128,7 @@ mod tests {
 
     #[test]
     fn hit_when_some_intersections_have_negative_t() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
         let intersection1 = Intersection::new(-1., sphere.clone());
         let intersection2 = Intersection::new(1., sphere.clone());
         let intersections = intersections!(intersection2.clone(), intersection1);
@@ -141,7 +142,7 @@ mod tests {
 
     #[test]
     fn hit_when_all_intersections_have_negative_t() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
         let intersection1 = Intersection::new(-2., sphere.clone());
         let intersection2 = Intersection::new(-1., sphere.clone());
         let intersections = intersections!(intersection2, intersection1);
@@ -153,7 +154,7 @@ mod tests {
     
     #[test]
     fn hit_is_always_lowest_nonnegative_intersection() {
-        let sphere = Sphere::new();
+        let sphere = Shape::Sphere(Sphere::new());
         let intersection1 = Intersection::new(5., sphere.clone());
         let intersection2 = Intersection::new(7., sphere.clone());
         let intersection3 = Intersection::new(-3., sphere.clone());
@@ -170,7 +171,7 @@ mod tests {
     #[test]
     fn precomputing_state_of_intersection() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let shape = Sphere::new();
+        let shape = Shape::Sphere(Sphere::new());
         let intersection = Intersection { t: 4., object: shape.clone() };
 
         let expected = Computations {
@@ -191,7 +192,7 @@ mod tests {
     #[test]
     fn hit_when_intersection_occurs_on_outside() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let shape = Sphere::new();
+        let shape = Shape::Sphere(Sphere::new());
         let intersection = Intersection { t: 4., object: shape.clone() };
 
         let actual = intersection.prepare_computations(ray);
@@ -202,7 +203,7 @@ mod tests {
     #[test]
     fn hit_when_intersection_occurs_on_inside() {
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
-        let shape = Sphere::new();
+        let shape = Shape::Sphere(Sphere::new());
         let intersection = Intersection { t: 1., object: shape.clone() };
 
         let expected = Computations {
@@ -224,8 +225,8 @@ mod tests {
     #[test]
     fn hit_shold_offset_point() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let mut shape = Sphere::new();
-        shape.transform = translate(0., 0., 1.);
+        let mut shape = Shape::Sphere(Sphere::new());
+        shape.set_transform(translate(0., 0., 1.));
         let intersection = Intersection::new(5., shape);
         let actual = intersection.prepare_computations(ray);
 

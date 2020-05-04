@@ -1,11 +1,11 @@
 use super::near_eq;
-use super::sphere::Sphere;
+use super::shape::Shape;
 use super::tuple::Tuple;
 
 #[derive(Debug)]
 pub struct Computations {
     pub t: f64,
-    pub object: Sphere,
+    pub object: Shape,
     pub point: Tuple,
     pub eye_vector: Tuple,
     pub normal_vector: Tuple,

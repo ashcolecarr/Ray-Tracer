@@ -3,14 +3,16 @@ use super::color::Color;
 use super::computations::Computations;
 use super::intersection::Intersection;
 use super::light::Light;
+use super::material::Material;
 use super::ray::Ray;
+use super::shape::{Shape, Actionable};
 use super::sphere::Sphere;
 use super::transformation::*;
 use super::tuple::Tuple;
 use super::WHITE;
 
 pub struct World {
-    pub objects: Vec<Sphere>,
+    pub objects: Vec<Shape>,
     pub lights: Vec<Light>,
 }
 
@@ -18,13 +20,15 @@ impl Default for World {
     fn default() -> Self {
         let light = Light::point_light(Tuple::point(-10., 10., -10.), WHITE);
 
-        let mut sphere1 = Sphere::new();
-        sphere1.material.color = Color::new(0.8, 1., 0.6);
-        sphere1.material.diffuse = 0.7;
-        sphere1.material.specular = 0.2;
+        let mut material: Material = Default::default();
+        material.color = Color::new(0.8, 1., 0.6);
+        material.diffuse = 0.7;
+        material.specular = 0.2;
+        let mut sphere1 = Shape::Sphere(Sphere::new());
+        sphere1.set_material(material);
 
-        let mut sphere2 = Sphere::new();
-        sphere2.transform = scale(0.5, 0.5, 0.5);
+        let mut sphere2 = Shape::Sphere(Sphere::new());
+        sphere2.set_transform(scale(0.5, 0.5, 0.5));
 
         let lights = vec![light];
         let objects = vec![sphere1, sphere2];
@@ -54,7 +58,7 @@ impl World {
         let shadowed = self.is_shadowed(computations.over_point);
 
         for (light, shadow) in self.lights.iter().zip(shadowed) {
-            color += computations.object.material.lighting(*light, 
+            color += computations.object.get_material().lighting(*light, 
                 computations.over_point, computations.eye_vector, 
                 computations.normal_vector, shadow);
         }
@@ -95,8 +99,10 @@ impl World {
 mod tests {
     use super::*;
     use super::super::color::Color;
+    use super::super::material::Material;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
+    use super::super::shape::{Shape, Actionable};
     use super::super::tuple::Tuple;
 
     #[test]
@@ -111,21 +117,23 @@ mod tests {
     fn default_world() {
         let expected_light = Light::point_light(Tuple::point(-10., 10., -10.), WHITE);
 
-        let mut expected_sphere1 = Sphere::new();
-        expected_sphere1.material.color = Color::new(0.8, 1., 0.6);
-        expected_sphere1.material.diffuse = 0.7;
-        expected_sphere1.material.specular = 0.2;
+        let mut material: Material = Default::default();
+        material.color = Color::new(0.8, 1., 0.6);
+        material.diffuse = 0.7;
+        material.specular = 0.2;
+        let mut expected_sphere1 = Shape::Sphere(Sphere::new());
+        expected_sphere1.set_material(material);
 
-        let mut expected_sphere2 = Sphere::new();
-        expected_sphere2.transform = scale(0.5, 0.5, 0.5);
+        let mut expected_sphere2 = Shape::Sphere(Sphere::new());
+        expected_sphere2.set_transform(scale(0.5, 0.5, 0.5));
 
         let actual: World = Default::default();
 
         assert_eq!(expected_light, actual.lights[0]);
-        assert_eq!(expected_sphere1.material.color, actual.objects[0].material.color);
-        assert_eq!(expected_sphere1.material.diffuse, actual.objects[0].material.diffuse);
-        assert_eq!(expected_sphere1.material.specular, actual.objects[0].material.specular);
-        assert_eq!(expected_sphere2.transform, actual.objects[1].transform);
+        assert_eq!(expected_sphere1.get_material().color, actual.objects[0].get_material().color);
+        assert_eq!(expected_sphere1.get_material().diffuse, actual.objects[0].get_material().diffuse);
+        assert_eq!(expected_sphere1.get_material().specular, actual.objects[0].get_material().specular);
+        assert_eq!(expected_sphere2.get_transform(), actual.objects[1].get_transform());
     }
 
     #[test]
@@ -206,11 +214,13 @@ mod tests {
     #[test]
     fn color_with_intersection_behind_ray() {
         let mut world: World = Default::default();
-        world.objects[0].material.ambient = 1.;
-        world.objects[1].material.ambient = 1.;
+        let mut material: Material = Default::default();
+        material.ambient = 1.;
+        world.objects[0].set_material(material);
+        world.objects[1].set_material(material);
         let ray = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
 
-        let expected = world.objects[1].material.color;
+        let expected = world.objects[1].get_material().color;
 
         let actual = world.color_at(ray);
 
@@ -253,10 +263,10 @@ mod tests {
     fn shade_hit_is_given_intersection_in_shadow() {
         let mut world = World::new();
         world.lights.push(Light::point_light(Tuple::point(0., 0., -10.), WHITE));
-        let sphere1 = Sphere::new();
+        let sphere1 = Shape::Sphere(Sphere::new());
         world.objects.push(sphere1);
-        let mut sphere2 = Sphere::new();
-        sphere2.transform = translate(0., 0., 10.);
+        let mut sphere2 = Shape::Sphere(Sphere::new());
+        sphere2.set_transform(translate(0., 0., 10.));
         world.objects.push(sphere2.clone());
         let ray = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
         let intersection = Intersection::new(4., sphere2);
