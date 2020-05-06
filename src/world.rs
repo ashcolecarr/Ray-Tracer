@@ -56,10 +56,11 @@ impl World {
     pub fn shade_hit(&self, computations: Computations) -> Color {
         let mut color = BLACK;
         let shadowed = self.is_shadowed(computations.over_point);
+        let material = computations.object.get_material();
 
         for (light, shadow) in self.lights.iter().zip(shadowed) {
-            color += computations.object.get_material().lighting(*light, 
-                computations.over_point, computations.eye_vector, 
+            color += material.lighting(computations.object.clone(),
+                *light, computations.over_point, computations.eye_vector, 
                 computations.normal_vector, shadow);
         }
 
@@ -216,7 +217,7 @@ mod tests {
         let mut world: World = Default::default();
         let mut material: Material = Default::default();
         material.ambient = 1.;
-        world.objects[0].set_material(material);
+        world.objects[0].set_material(material.clone());
         world.objects[1].set_material(material);
         let ray = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
 

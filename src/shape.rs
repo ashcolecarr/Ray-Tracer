@@ -72,7 +72,7 @@ impl Actionable for Shape {
     }
 
     fn get_material(&self) -> Material {
-        match self {
+        match self.clone() {
             Shape::Sphere(sphere) => sphere.material,
             Shape::Plane(plane) => plane.material,
             Shape::TestShape(test_shape) => test_shape.material,
@@ -172,10 +172,10 @@ mod tests {
     fn sphere_may_be_assigned_material() {
         let mut shape = Shape::TestShape(TestShape::new());
         let mut material: Material = Default::default();
-        shape.set_material(material);
-        
-        let expected = material;
         material.ambient = 1.;
+        shape.set_material(material.clone());
+        
+        let expected = material.clone();
 
         let actual = shape.get_material();
 
