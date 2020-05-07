@@ -7,6 +7,9 @@ use super::tuple::Tuple;
 pub enum Pattern {
     Striped (StripedPattern),
     Gradient (GradientPattern),
+    Ring (RingPattern),
+    Checkered (CheckeredPattern),
+    RingGradient (RingGradientPattern),
     Test (TestPattern),
 }
 
@@ -24,6 +27,9 @@ impl PatternTrait for Pattern {
         match self {
             Pattern::Striped(striped) => striped.pattern_at(pattern_point),
             Pattern::Gradient(gradient) => gradient.pattern_at(pattern_point),
+            Pattern::Ring(ring) => ring.pattern_at(pattern_point),
+            Pattern::Checkered(checkered) => checkered.pattern_at(pattern_point),
+            Pattern::RingGradient(ring_gradient) => ring_gradient.pattern_at(pattern_point),
             Pattern::Test(test) => test.pattern_at(pattern_point),
         }
     }
@@ -32,6 +38,9 @@ impl PatternTrait for Pattern {
         match self.clone() {
             Pattern::Striped(striped) => striped.transform,
             Pattern::Gradient(gradient) => gradient.transform,
+            Pattern::Ring(ring) => ring.transform,
+            Pattern::Checkered(checkered) => checkered.transform,
+            Pattern::RingGradient(ring_gradient) => ring_gradient.transform,
             Pattern::Test(test) => test.transform,
         }
     }
@@ -40,23 +49,19 @@ impl PatternTrait for Pattern {
         match self {
             Pattern::Striped(striped) => striped.transform = transform,
             Pattern::Gradient(gradient) => gradient.transform = transform,
+            Pattern::Ring(ring) => ring.transform = transform,
+            Pattern::Checkered(checkered) => checkered.transform = transform,
+            Pattern::RingGradient(ring_gradient) => ring_gradient.transform = transform,
             Pattern::Test(test) => test.transform = transform,
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StripedPattern {
     pub a: Color,
     pub b: Color,
     pub transform: Matrix,
-}
-
-impl PartialEq for StripedPattern {
-    fn eq(&self, other: &Self) -> bool {
-        self.a == other.a && self.b == other.b &&
-            self.transform == other.transform
-    }
 }
 
 impl StripedPattern {
@@ -73,18 +78,11 @@ impl StripedPattern {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GradientPattern {
     pub a: Color,
     pub b: Color,
     pub transform: Matrix,
-}
-
-impl PartialEq for GradientPattern {
-    fn eq(&self, other: &Self) -> bool {
-        self.a == other.a && self.b == other.b &&
-            self.transform == other.transform
-    }
 }
 
 impl GradientPattern {
@@ -100,18 +98,11 @@ impl GradientPattern {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RingPattern {
     pub a: Color,
     pub b: Color,
     pub transform: Matrix,
-}
-
-impl PartialEq for RingPattern {
-    fn eq(&self, other: &Self) -> bool {
-        self.a == other.a && self.b == other.b &&
-            self.transform == other.transform
-    }
 }
 
 impl RingPattern {
@@ -127,16 +118,53 @@ impl RingPattern {
         }
     }
 }
-/// For testing purposes only--not meant to be used directly.
-#[derive(Debug, Clone)]
-pub struct TestPattern {
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CheckeredPattern {
+    pub a: Color,
+    pub b: Color,
     pub transform: Matrix,
 }
 
-impl PartialEq for TestPattern {
-    fn eq(&self, other: &Self) -> bool {
-        self.transform == other.transform
+impl CheckeredPattern {
+    pub fn new(a: Color, b: Color) -> Self {
+        Self { a, b, transform: Matrix::identity(4) }
     }
+
+    pub fn pattern_at(&self, point: Tuple) -> Color {
+        if (point.x.floor() + point.y.floor() + point.z.floor()) as i32 % 2 == 0 {
+            self.a
+        } else {
+            self.b
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RingGradientPattern {
+    pub a: Color,
+    pub b: Color,
+    pub transform: Matrix,
+}
+
+impl RingGradientPattern {
+    pub fn new(a: Color, b: Color) -> Self {
+        Self { a, b, transform: Matrix::identity(4) }
+    }
+
+    pub fn pattern_at(&self, point: Tuple) -> Color {
+        let distance = self.b - self.a;
+        let c = (point.x.powi(2) + point.z.powi(2)).sqrt();
+        let fraction = c - c.floor();
+
+        self.a + distance * fraction
+    }
+}
+
+/// For testing purposes only--not meant to be used directly.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TestPattern {
+    pub transform: Matrix,
 }
 
 impl TestPattern {
@@ -324,5 +352,56 @@ mod tests {
         assert_eq!(expected_color2, actual_color2);
         assert_eq!(expected_color3, actual_color3);
         assert_eq!(expected_color4, actual_color4);
+    }
+
+    #[test]
+    fn checkers_should_repeat_in_x() {
+        let pattern = CheckeredPattern::new(WHITE, BLACK);
+
+        let expected_color1 = WHITE; 
+        let expected_color2 = WHITE; 
+        let expected_color3 = BLACK; 
+
+        let actual_color1 = pattern.pattern_at(ORIGIN);
+        let actual_color2 = pattern.pattern_at(Tuple::point(0.99, 0., 0.));
+        let actual_color3 = pattern.pattern_at(Tuple::point(1.01, 0., 0.));
+
+        assert_eq!(expected_color1, actual_color1);
+        assert_eq!(expected_color2, actual_color2);
+        assert_eq!(expected_color3, actual_color3);
+    }
+
+    #[test]
+    fn checkers_should_repeat_in_y() {
+        let pattern = CheckeredPattern::new(WHITE, BLACK);
+
+        let expected_color1 = WHITE; 
+        let expected_color2 = WHITE; 
+        let expected_color3 = BLACK; 
+
+        let actual_color1 = pattern.pattern_at(ORIGIN);
+        let actual_color2 = pattern.pattern_at(Tuple::point(0., 0.99, 0.));
+        let actual_color3 = pattern.pattern_at(Tuple::point(0., 1.01, 0.));
+
+        assert_eq!(expected_color1, actual_color1);
+        assert_eq!(expected_color2, actual_color2);
+        assert_eq!(expected_color3, actual_color3);
+    }
+    
+    #[test]
+    fn checkers_should_repeat_in_z() {
+        let pattern = CheckeredPattern::new(WHITE, BLACK);
+
+        let expected_color1 = WHITE; 
+        let expected_color2 = WHITE; 
+        let expected_color3 = BLACK; 
+
+        let actual_color1 = pattern.pattern_at(ORIGIN);
+        let actual_color2 = pattern.pattern_at(Tuple::point(0., 0., 0.99));
+        let actual_color3 = pattern.pattern_at(Tuple::point(0., 0., 1.01));
+
+        assert_eq!(expected_color1, actual_color1);
+        assert_eq!(expected_color2, actual_color2);
+        assert_eq!(expected_color3, actual_color3);
     }
 }

@@ -322,19 +322,29 @@ pub fn draw_room_scene() {
 }
 
 pub fn draw_pattern() {
-    let mut pattern = Pattern::Striped(StripedPattern::new(Color::new(1., 0.5, 0.), Color::new(0., 0., 1.)));
-    pattern.set_transform(rotate(PI / 2., Axis::Y));
+    //let plane_pattern = Pattern::Checkered(CheckeredPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
+    //let plane_pattern = Pattern::Ring(RingPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
+    let plane_pattern = Pattern::RingGradient(RingGradientPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
     let mut plane_material: Material = Default::default();
-    plane_material.pattern = Some(pattern);
+    plane_material.pattern = Some(plane_pattern);
     let mut plane = Shape::Plane(Plane::new());
     plane.set_material(plane_material);
+
+    let mut sphere_pattern = Pattern::Ring(RingPattern::new(Color::new(0.5, 0.4, 0.), Color::new(1.0, 0.8, 0.)));
+    sphere_pattern.set_transform(translate(0., 0., -1.) * scale(0.125, 0.125, 0.125));
+    let mut sphere_material: Material = Default::default();
+    sphere_material.pattern = Some(sphere_pattern);
+    let mut sphere = Shape::Sphere(Sphere::new());
+    sphere.set_material(sphere_material);
+    sphere.set_transform(translate(0., 3., 0.) * scale(2., 2., 2.));
 
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
     world.objects.push(plane);
+    world.objects.push(sphere);
     
     let mut camera = Camera::new(100, 100, PI / 2.);
-    camera.transform = view_transform(Tuple::point(0., 1.5, -5.), Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
+    camera.transform = view_transform(Tuple::point(-5., 3.5, 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
     
     let canvas = camera.render(world);
 
