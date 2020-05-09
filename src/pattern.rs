@@ -404,4 +404,24 @@ mod tests {
         assert_eq!(expected_color2, actual_color2);
         assert_eq!(expected_color3, actual_color3);
     }
+
+    #[test]
+    fn ring_gradient_radially_interpolates_between_colors() {
+        let pattern = GradientPattern::new(WHITE, BLACK);
+
+        let expected_color1 = WHITE;
+        let expected_color2 = Color::new(0.75, 0.75, 0.75);
+        let expected_color3 = Color::new(0.5, 0.5, 0.5);
+        let expected_color4 = Color::new(0.25, 0.25, 0.25);
+
+        let actual_color1 = pattern.pattern_at(ORIGIN);
+        let actual_color2 = pattern.pattern_at(Tuple::point(0.25, 0., 0.25));
+        let actual_color3 = pattern.pattern_at(Tuple::point(0.5, 0., 0.5));
+        let actual_color4 = pattern.pattern_at(Tuple::point(0.75, 0., 0.75));
+
+        assert_eq!(expected_color1, actual_color1);
+        assert_eq!(expected_color2, actual_color2);
+        assert_eq!(expected_color3, actual_color3);
+        assert_eq!(expected_color4, actual_color4);
+    }
 }

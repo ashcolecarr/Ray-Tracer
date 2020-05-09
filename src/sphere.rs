@@ -61,6 +61,17 @@ impl Sphere {
     pub fn normal_at(&self, world_point: Tuple) -> Tuple {
         world_point - ORIGIN
     }
+
+    pub fn glass_sphere() -> Self {
+        let mut material: Material = Default::default();
+        material.transparency = 1.;
+        material.refractive_index = 1.5;
+
+        let mut sphere = Sphere::new();
+        sphere.material = material;
+
+        sphere
+    }
 }
 
 #[cfg(test)]
@@ -228,5 +239,18 @@ mod tests {
         let expected = actual.normalize();
         
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn helper_for_producing_sphere_with_glassy_material() {
+        let expected_transform = Matrix::identity(4);
+        let expected_transparency = 1.;
+        let expected_refractive_index = 1.5;
+
+        let actual = Shape::Sphere(Sphere::glass_sphere());
+
+        assert_eq!(expected_transform, actual.get_transform());
+        assert_eq!(expected_transparency, actual.get_material().transparency);
+        assert_eq!(expected_refractive_index, actual.get_material().refractive_index);
     }
 }

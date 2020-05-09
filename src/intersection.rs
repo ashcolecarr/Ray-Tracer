@@ -29,7 +29,7 @@ impl Intersection {
         }
     }
 
-    pub fn prepare_computations(&self, ray: Ray) -> Computations {
+    pub fn prepare_computations(&self, ray: Ray, intersections: Vec<Intersection>) -> Computations {
         let point = ray.position(self.t);
         let mut normal_vector = self.object.normal_at(point);
         let eye_vector = -ray.direction;
@@ -42,6 +42,36 @@ impl Intersection {
         };
 
         let over_point = point + normal_vector * EPSILON;
+        let under_point = point - normal_vector * EPSILON;
+        let reflect_vector = ray.direction.reflect(normal_vector);
+
+        let mut n1 = 0.;
+        let mut n2 = 0.;
+        let mut containers: Vec<Shape> = Vec::new();
+        for intersection in intersections {
+            if intersection == *self {
+                n1 = if containers.is_empty() {
+                    1.
+                } else {
+                    containers.last().unwrap().get_material().refractive_index
+                };
+            }
+
+            if containers.contains(&intersection.object) {
+                let index = &containers.iter().position(|con| *con == intersection.object).unwrap();
+                containers.remove(*index);
+            } else {
+                containers.push(intersection.clone().object);
+            }
+
+            if intersection == *self {
+                n2 = if containers.is_empty() {
+                    1.
+                } else {
+                    containers.last().unwrap().get_material().refractive_index
+                }
+            }
+        }
 
         Computations {
             t: self.t,
@@ -51,13 +81,17 @@ impl Intersection {
             normal_vector,
             inside, 
             over_point,
+            reflect_vector,
+            n1,
+            n2,
+            under_point,
         }
     }
 }
 
 #[macro_export]
 macro_rules! intersections {
-    ( $( $x:expr ), * ) => {
+    ( $( $x:expr ),* ) => {
         {
             let mut intersections = Vec::new();
             $(
@@ -74,8 +108,10 @@ mod tests {
     use super::*;
     use super::super::computations::Computations;
     use super::super::EPSILON;
+    use super::super::material::Material;
     use super::super::near_eq;
     use super::super::ORIGIN;
+    use super::super::plane::Plane;
     use super::super::ray::Ray;
     use super::super::shape::Shape;
     use super::super::sphere::Sphere;
@@ -182,9 +218,13 @@ mod tests {
             normal_vector: Tuple::vector(0., 0., -1.),
             inside: false,
             over_point: Tuple::point(0., 0., -1.) + Tuple::vector(0., 0., -1.) * EPSILON,
+            reflect_vector: ray.direction.reflect(Tuple::vector(0., 0., -1.)),
+            n1: 1.,
+            n2: 1.,
+            under_point: Tuple::point(0., 0., -1.) - Tuple::vector(0., 0., -1.) * EPSILON,
         };
 
-        let actual = intersection.prepare_computations(ray);
+        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
 
         assert_eq!(expected, actual);
     }
@@ -195,7 +235,7 @@ mod tests {
         let shape = Shape::Sphere(Sphere::new());
         let intersection = Intersection { t: 4., object: shape.clone() };
 
-        let actual = intersection.prepare_computations(ray);
+        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
 
         assert!(!actual.inside);
     }
@@ -214,9 +254,13 @@ mod tests {
             normal_vector: Tuple::vector(0., 0., -1.),
             inside: true,
             over_point: Tuple::point(0., 0., 1.) + (Tuple::vector(0., 0., -1.) * EPSILON),
+            reflect_vector: ray.direction.reflect(Tuple::vector(0., 0., -1.)),
+            n1: 1.,
+            n2: 1.,
+            under_point: Tuple::point(0., 0., 1.) - (Tuple::vector(0., 0., -1.) * EPSILON),
         };
 
-        let actual = intersection.prepare_computations(ray);
+        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
 
         assert!(actual.inside);
         assert_eq!(expected, actual);
@@ -228,9 +272,69 @@ mod tests {
         let mut shape = Shape::Sphere(Sphere::new());
         shape.set_transform(translate(0., 0., 1.));
         let intersection = Intersection::new(5., shape);
-        let actual = intersection.prepare_computations(ray);
+        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
 
         assert!(actual.over_point.z < -EPSILON / 2.);
         assert!(actual.point.z > actual.over_point.z);
+    }
+
+    #[test]
+    fn precomputing_reflection_vector() {
+        let shape = Shape::Plane(Plane::new());
+        let ray = Ray::new(Tuple::point(0., 1., -1.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
+        let intersection = Intersection::new(2_f64.sqrt(), shape);
+        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+
+        let expected = Tuple::vector(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.);
+
+        let actual = computations.reflect_vector;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn finding_n1_and_n2_at_various_intersections() {
+        let mut sphere1 = Shape::Sphere(Sphere::glass_sphere());
+        sphere1.set_transform(scale(2., 2., 2.));
+
+        let mut sphere2_material: Material = Default::default();
+        sphere2_material.refractive_index = 2.;
+        let mut sphere2 = Shape::Sphere(Sphere::glass_sphere());
+        sphere2.set_transform(translate(0., 0., -0.25));
+        sphere2.set_material(sphere2_material);
+
+        let mut sphere3_material: Material = Default::default();
+        sphere3_material.refractive_index = 2.5;
+        let mut sphere3 = Shape::Sphere(Sphere::glass_sphere());
+        sphere3.set_transform(scale(2., 2., 2.));
+        sphere3.set_material(sphere3_material);
+
+        let ray = Ray::new(Tuple::point(0., 0., -4.), Tuple::vector(0., 0., -1.));
+        let intersections = intersections!(Intersection::new(2., sphere1.clone()), 
+            Intersection::new(2.75, sphere2.clone()), Intersection::new(3.25, sphere3.clone()), 
+            Intersection::new(4.75, sphere2), Intersection::new(5.25, sphere3), 
+            Intersection::new(6., sphere1));
+        
+        let expected: Vec<(f64, f64)> = vec![(1., 1.5), (1.5, 2.), (2., 2.5),
+            (2.5, 2.5), (2.5, 1.5), (1.5, 1.)];
+        
+        for index in 0..6 {
+            let actual = intersections[index].prepare_computations(ray, intersections.clone());
+            assert_eq!(expected[index].0, actual.n1);
+            assert_eq!(expected[index].1, actual.n2);
+        }
+    }
+
+    #[test]
+    fn under_point_is_offset_below_surface() {
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let mut shape = Shape::Sphere(Sphere::glass_sphere());
+        shape.set_transform(translate(0., 0., 1.));
+        let intersection = Intersection::new(5., shape);
+        let intersections = intersections!(intersection.clone());
+        let computations = intersection.prepare_computations(ray, intersections);
+
+        assert!(computations.under_point.z > EPSILON / 2.);
+        assert!(computations.point.z < computations.under_point.z);
     }
 }

@@ -1,3 +1,4 @@
+use ray_tracer::BLACK;
 use ray_tracer::camera::Camera;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
@@ -29,7 +30,8 @@ fn main() {
     //draw_dither();
     //draw_sphere_scene();
     //draw_room_scene();
-    draw_pattern();
+    //draw_pattern();
+    draw_reflective_scene();
 }
 
 pub fn draw_projectile() {
@@ -349,4 +351,38 @@ pub fn draw_pattern() {
     let canvas = camera.render(world);
 
     fs::write("pattern.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_reflective_scene() {
+    let plane_pattern = Pattern::Checkered(CheckeredPattern::new(WHITE, BLACK));
+    let mut plane_material: Material = Default::default();
+    plane_material.pattern = Some(plane_pattern);
+    let mut plane = Shape::Plane(Plane::new());
+    plane.set_material(plane_material);
+
+    let mut sphere_material: Material = Default::default();
+    sphere_material.color = Color::new(0.2, 0.6, 1.);
+    sphere_material.reflective = 0.5;
+    let mut sphere = Shape::Sphere(Sphere::new());
+    sphere.set_material(sphere_material);
+    sphere.set_transform(translate(0., 3., 0.) * scale(2., 2., 2.));
+
+    let mut sphere2_material: Material = Default::default();
+    sphere2_material.color = Color::new(1., 0.6, 0.6);
+    let mut sphere2 = Shape::Sphere(Sphere::new());
+    sphere2.set_material(sphere2_material);
+    sphere2.set_transform(translate(2., 2., -2.) * scale(0.7, 0.7, 0.7));
+
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
+    world.objects.push(plane);
+    world.objects.push(sphere);
+    world.objects.push(sphere2);
+    
+    let mut camera = Camera::new(100, 100, PI / 2.);
+    camera.transform = view_transform(Tuple::point(0., 3.5, -5.), Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("reflective.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

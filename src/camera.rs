@@ -1,4 +1,5 @@
 use super::canvas::Canvas;
+use super::DEFAULT_RECURSION;
 use super::matrix::Matrix;
 use super::near_eq;
 use super::ORIGIN;
@@ -64,7 +65,7 @@ impl Camera {
         for y in 0..self.vsize - 1 {
             for x in 0..self.hsize - 1 {
                 let ray = self.ray_for_pixel(x as u32, y as u32);
-                let color = world.color_at(ray);
+                let color = world.color_at(ray, DEFAULT_RECURSION);
                 image.write_pixel(x as u32, y as u32, color);
             }
         }

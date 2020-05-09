@@ -15,6 +15,9 @@ pub struct Material {
     pub specular: f64,
     pub shininess: f64,
     pub pattern: Option<Pattern>,
+    pub reflective: f64,
+    pub transparency: f64,
+    pub refractive_index: f64,
 }
 
 impl Default for Material {
@@ -26,6 +29,9 @@ impl Default for Material {
             specular: 0.9,
             shininess: 200.0,
             pattern: None,
+            reflective: 0.,
+            transparency: 0.,
+            refractive_index: 1.,
         }
     }
 }
@@ -219,5 +225,30 @@ mod tests {
 
         assert_eq!(expected_color1, actual_color1);
         assert_eq!(expected_color2, actual_color2);
+    }
+
+    #[test]
+    fn reflectivity_for_default_material() {
+        let material: Material = Default::default();
+
+        let expected = 0.;
+
+        let actual = material.reflective;
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn transparency_and_refractive_index_for_default_material() {
+        let material: Material = Default::default();
+
+        let expected_transparency = 0.;
+        let expected_refractive_index = 1.;
+
+        let actual_transparency = material.transparency;
+        let actual_refractive_index = material.refractive_index;
+
+        assert_eq!(expected_transparency, actual_transparency);
+        assert_eq!(expected_refractive_index, actual_refractive_index);
     }
 }
