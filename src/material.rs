@@ -45,6 +45,55 @@ impl PartialEq for Material {
 }
 
 impl Material {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with_color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn with_ambient(mut self, ambient: f64) -> Self {
+        self.ambient = ambient;
+        self
+    }
+
+    pub fn with_diffuse(mut self, diffuse: f64) -> Self {
+        self.diffuse = diffuse;
+        self
+    }
+
+    pub fn with_specular(mut self, specular: f64) -> Self {
+        self.specular = specular;
+        self
+    }
+
+    pub fn with_shininess(mut self, shininess: f64) -> Self {
+        self.shininess = shininess;
+        self
+    }
+
+    pub fn with_pattern(mut self, pattern: Pattern) -> Self {
+        self.pattern = Some(pattern);
+        self
+    }
+
+    pub fn with_reflective(mut self, reflective: f64) -> Self {
+        self.reflective = reflective;
+        self
+    }
+
+    pub fn with_transparency(mut self, transparency: f64) -> Self {
+        self.transparency = transparency;
+        self
+    }
+
+    pub fn with_refractive_index(mut self, refractive_index: f64) -> Self {
+        self.refractive_index = refractive_index;
+        self
+    }
+
     pub fn lighting(&self, object: Shape, light: Light, point: Tuple, eye_vector: Tuple, normal_vector: Tuple, in_shadow: bool) -> Color {
         let real_color = if self.pattern.is_some() {
             self.pattern.clone().unwrap().pattern_at_shape(object, point)
@@ -250,5 +299,18 @@ mod tests {
 
         assert_eq!(expected_transparency, actual_transparency);
         assert_eq!(expected_refractive_index, actual_refractive_index);
+    }
+
+    #[test]
+    fn material_builder_sets_material() {
+        let mut expected: Material = Default::default();
+        expected.color = Color::new(1., 1., 0.);
+        expected.shininess = 300.;
+        expected.transparency = 0.1;
+
+        let actual = Material::new().with_color(Color::new(1., 1., 0.))
+            .with_shininess(300.).with_transparency(0.1);
+        
+        assert_eq!(expected, actual);
     }
 }

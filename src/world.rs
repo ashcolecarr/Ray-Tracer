@@ -56,7 +56,6 @@ impl World {
 
     pub fn shade_hit(&self, computations: Computations, remaining: i32) -> Color {
         let mut surface = BLACK;
-        let mut reflected = BLACK;
         let shadowed = self.is_shadowed(computations.over_point);
         let material = computations.object.get_material();
 
@@ -64,16 +63,25 @@ impl World {
             surface += material.lighting(computations.object.clone(),
                 *light, computations.over_point, computations.eye_vector, 
                 computations.normal_vector, shadow);
-            reflected += self.reflected_color(computations.clone(), remaining);
         }
+        
+        let reflected = self.reflected_color(computations.clone(), remaining);
+        let refracted = self.refracted_color(computations.clone(), remaining);
+        
+        let material = computations.object.get_material();
+        if material.reflective > 0. && material.transparency > 0. {
+            let reflectance = Intersection::schlick(computations);
 
-        surface + reflected
+            surface + reflected * reflectance + refracted * (1. - reflectance)
+        } else {
+            surface + reflected + refracted
+        }
     }
 
     pub fn color_at(&self, ray: Ray, remaining: i32) -> Color {
         let intersections = self.intersect_world(ray);
         let hit = Intersection::hit(intersections.clone());
-
+        
         if hit.is_none() {
             BLACK
         } else {
@@ -471,35 +479,94 @@ mod tests {
 
         let expected = BLACK;
 
-        let actual = world.refracted_color(computations, 5);
+        let actual = world.refracted_color(computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn refracted_color_with_refracted_ray() {
-        let world: World = Default::default();
+        let mut world: World = Default::default();
         let mut shape1_material: Material = Default::default();
         shape1_material.ambient = 1.;
         shape1_material.pattern = Some(Pattern::Test(TestPattern::new()));
-        let mut shape1 = world.objects[0].clone();
-        shape1.set_material(shape1_material);
+        world.objects[0].set_material(shape1_material);
 
         let mut shape2_material: Material = Default::default();
         shape2_material.transparency = 1.;
         shape2_material.refractive_index = 1.5;
-        let mut shape2 = world.objects[1].clone();
-        shape2.set_material(shape2_material);
+        world.objects[1].set_material(shape2_material);
 
         let ray = Ray::new(Tuple::point(0., 0., 0.1), Tuple::vector(0., 1., 0.));
-        let intersections = intersections!(Intersection::new(-0.9899, shape1.clone()),
-            Intersection::new(-0.4899, shape2.clone()), Intersection::new(0.4899, shape2),
-            Intersection::new(0.9899, shape1));
+        let intersections = intersections!(Intersection::new(-0.9899, world.objects[0].clone()),
+            Intersection::new(-0.4899, world.objects[1].clone()), Intersection::new(0.4899, world.objects[1].clone()),
+            Intersection::new(0.9899, world.objects[0].clone()));
         let computations = intersections[2].prepare_computations(ray, intersections.clone());
 
-        let expected = Color::new(0., 0.99888, 0.04725);
+        let expected = Color::new(0., 0.99887, 0.04722);
 
-        let actual = world.refracted_color(computations, 5);
+        let actual = world.refracted_color(computations, DEFAULT_RECURSION);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn shade_hit_with_transparent_material() {
+        let mut world: World = Default::default();
+        let mut floor_material: Material = Default::default();
+        floor_material.transparency = 0.5;
+        floor_material.refractive_index = 1.5;
+        let mut floor = Shape::Plane(Plane::new());
+        floor.set_transform(translate(0., -1., 0.));
+        floor.set_material(floor_material);
+        world.objects.push(floor.clone());
+
+        let mut ball_material: Material = Default::default();
+        ball_material.color = Color::new(1., 0., 0.);
+        ball_material.ambient = 0.5;
+        let mut ball = Shape::Sphere(Sphere::new());
+        ball.set_material(ball_material);
+        ball.set_transform(translate(0., -3.5, -0.5));
+        world.objects.push(ball);
+
+        let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
+        let intersections = intersections!(Intersection::new(2_f64.sqrt(), floor));
+        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+
+        let expected = Color::new(0.93642, 0.68642, 0.68642);
+
+        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn shade_hit_with_reflective_transparent_material() {
+        let mut world: World = Default::default();
+        let mut floor_material: Material = Default::default();
+        floor_material.reflective = 0.5;
+        floor_material.transparency = 0.5;
+        floor_material.refractive_index = 1.5;
+        let mut floor = Shape::Plane(Plane::new());
+        floor.set_transform(translate(0., -1., 0.));
+        floor.set_material(floor_material);
+        world.objects.push(floor.clone());
+
+        let mut ball_material: Material = Default::default();
+        ball_material.color = Color::new(1., 0., 0.);
+        ball_material.ambient = 0.5;
+        let mut ball = Shape::Sphere(Sphere::new());
+        ball.set_material(ball_material);
+        ball.set_transform(translate(0., -3.5, -0.5));
+        world.objects.push(ball);
+
+        let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
+        let intersections = intersections!(Intersection::new(2_f64.sqrt(), floor));
+        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+
+        let expected = Color::new(0.93391, 0.69643, 0.69243);
+
+        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }

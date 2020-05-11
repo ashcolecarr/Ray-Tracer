@@ -87,6 +87,26 @@ impl Intersection {
             under_point,
         }
     }
+
+    pub fn schlick(computations: Computations) -> f64 {
+        let mut cos = computations.eye_vector.dot(computations.normal_vector);
+
+        if computations.n1 > computations.n2 {
+            let n = computations.n1 / computations.n2;
+            let sin2_t = n.powi(2) * (1. - cos.powi(2));
+
+            if sin2_t > 1. {
+                return 1.;
+            }
+
+            let cos_t = (1. - sin2_t).sqrt();
+            cos = cos_t;
+        }
+
+        let r0 = ((computations.n1 - computations.n2) / (computations.n1 + computations.n2)).powi(2);
+
+        r0 + (1. - r0) * (1. - cos).powi(5)
+    }
 }
 
 #[macro_export]
@@ -320,8 +340,8 @@ mod tests {
         
         for index in 0..6 {
             let actual = intersections[index].prepare_computations(ray, intersections.clone());
-            assert_eq!(expected[index].0, actual.n1);
-            assert_eq!(expected[index].1, actual.n2);
+            assert!(near_eq(expected[index].0, actual.n1));
+            assert!(near_eq(expected[index].1, actual.n2));
         }
     }
 
@@ -336,5 +356,49 @@ mod tests {
 
         assert!(computations.under_point.z > EPSILON / 2.);
         assert!(computations.point.z < computations.under_point.z);
+    }
+
+    #[test]
+    fn schlick_approximation_under_total_internal_reflection() {
+        let shape = Shape::Sphere(Sphere::glass_sphere());
+        let ray = Ray::new(Tuple::point(0., 0., 2_f64.sqrt()), Tuple::vector(0., 1., 0.));
+        let intersections = intersections!(Intersection::new(-2_f64.sqrt() / 2., shape.clone()),
+            Intersection::new(2_f64.sqrt() / 2., shape));   
+        let computations = intersections[1].prepare_computations(ray, intersections.clone());
+
+        let expected = 1.;
+
+        let actual = Intersection::schlick(computations);
+
+        assert!(near_eq(expected, actual));        
+    }
+
+    #[test]
+    fn schlick_approximation_with_perpendicular_viewing_angle() {
+        let shape = Shape::Sphere(Sphere::glass_sphere());
+        let ray = Ray::new(ORIGIN, Tuple::vector(0., 1., 0.));
+        let intersections = intersections!(Intersection::new(-1., shape.clone()),
+            Intersection::new(1., shape));   
+        let computations = intersections[1].prepare_computations(ray, intersections.clone());
+
+        let expected = 0.04;
+
+        let actual = Intersection::schlick(computations);
+
+        assert!(near_eq(expected, actual)); 
+    }
+
+    #[test]
+    fn schlick_approximation_with_small_angle_and_n2_greater_than_n1() {
+        let shape = Shape::Sphere(Sphere::glass_sphere());
+        let ray = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
+        let intersections = intersections!(Intersection::new(1.8589, shape));
+        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+
+        let expected = 0.48873;
+
+        let actual = Intersection::schlick(computations);
+
+        assert!(near_eq(expected, actual)); 
     }
 }

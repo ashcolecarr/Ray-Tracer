@@ -31,7 +31,9 @@ fn main() {
     //draw_sphere_scene();
     //draw_room_scene();
     //draw_pattern();
-    draw_reflective_scene();
+    //draw_reflective_scene();
+    //draw_glass_ball();
+    draw_reflection_refraction();
 }
 
 pub fn draw_projectile() {
@@ -324,8 +326,6 @@ pub fn draw_room_scene() {
 }
 
 pub fn draw_pattern() {
-    //let plane_pattern = Pattern::Checkered(CheckeredPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
-    //let plane_pattern = Pattern::Ring(RingPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
     let plane_pattern = Pattern::RingGradient(RingGradientPattern::new(Color::new(0.6, 0.8, 1.), Color::new(0., 0., 1.)));
     let mut plane_material: Material = Default::default();
     plane_material.pattern = Some(plane_pattern);
@@ -385,4 +385,143 @@ pub fn draw_reflective_scene() {
     let canvas = camera.render(world);
 
     fs::write("reflective.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_glass_ball() {
+    let plane_pattern = Pattern::Checkered(CheckeredPattern::new(WHITE, BLACK));
+    let mut plane_material: Material = Default::default();
+    plane_material.pattern = Some(plane_pattern);
+    let mut plane = Shape::Plane(Plane::new());
+    plane.set_material(plane_material);
+
+    let mut glass: Material = Default::default();
+    glass.transparency = 1.;
+    glass.refractive_index = 1.5;
+    glass.ambient = 0.5;
+    glass.diffuse = 0.1;
+    glass.specular = 1.;
+    glass.shininess = 300.;
+    glass.color = Color::new(0.1, 0., 0.);
+    let mut glass_sphere = Shape::Sphere(Sphere::glass_sphere());
+    glass_sphere.set_material(glass);
+    glass_sphere.set_transform(translate(0., 2., 0.) * scale(1.5, 1.5, 1.5));
+
+    let mut air_material: Material = Default::default();
+    air_material.transparency = 1.;
+    air_material.diffuse = 0.1;
+    air_material.color = Color::new(0.1, 0.1, 0.1);
+    let mut air_bubble = Shape::Sphere(Sphere::new());
+    air_bubble.set_material(air_material);
+    air_bubble.set_transform(translate(0., 2., 0.) * scale(1., 1., 1.));
+
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), Color::new(0.5, 0.5, 0.5)));
+    world.objects.push(plane);
+    world.objects.push(glass_sphere);
+    world.objects.push(air_bubble);
+    
+    let mut camera = Camera::new(100, 100, PI / 2.);
+    camera.transform = view_transform(Tuple::point(0., 5., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("glass_ball.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_reflection_refraction() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(-4.9, 4.9, -1.), Color::new(1., 1., 1.)));
+
+    let floor_pattern = Pattern::Checkered(CheckeredPattern::new(Color::new(0.35, 0.35, 0.35), Color::new(0.65, 0.65, 0.65)));
+    let mut floor = Shape::Plane(Plane::new());
+    floor.set_transform(rotate(0.31415, Axis::Y));
+    floor.set_material(Material::new().with_pattern(floor_pattern)
+        .with_specular(0.).with_reflective(0.4));
+    world.objects.push(floor);
+
+    let mut ceiling = Shape::Plane(Plane::new());
+    ceiling.set_transform(translate(0., 5., 0.));
+    ceiling.set_material(Material::new().with_color(Color::new(0.8, 0.8, 0.8))
+        .with_ambient(0.3).with_specular(0.));
+    world.objects.push(ceiling);
+
+    let mut wall_pattern = Pattern::Striped(StripedPattern::new(Color::new(0.45, 0.45, 0.45), Color::new(0.55, 0.55, 0.55)));
+    wall_pattern.set_transform(rotate(1.5708, Axis::Y) * scale(0.25, 0.25, 0.25));
+    let wall_material = Material::new().with_pattern(wall_pattern)
+        .with_ambient(0.).with_diffuse(0.4).with_specular(0.).with_reflective(0.3);
+
+    let mut west_wall = Shape::Plane(Plane::new());
+    west_wall.set_transform(translate(-5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y));
+    west_wall.set_material(wall_material.clone());
+    world.objects.push(west_wall);
+
+    let mut east_wall = Shape::Plane(Plane::new());
+    east_wall.set_transform(translate(5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y));
+    east_wall.set_material(wall_material.clone());
+    world.objects.push(east_wall);
+
+    let mut north_wall = Shape::Plane(Plane::new());
+    north_wall.set_transform(translate(0., 0., 5.) * rotate(1.5708, Axis::X));
+    north_wall.set_material(wall_material.clone());
+    world.objects.push(north_wall);
+    
+    let mut south_wall = Shape::Plane(Plane::new());
+    south_wall.set_transform(translate(0., 0., -5.) * rotate(1.5708, Axis::X));
+    south_wall.set_material(wall_material.clone());
+    world.objects.push(south_wall);
+
+    // Background spheres
+    let mut background_sphere1 = Shape::Sphere(Sphere::new());
+    background_sphere1.set_transform(translate(4.6, 0.4, 1.) * scale(0.4, 0.4, 0.4));
+    background_sphere1.set_material(Material::new()
+        .with_color(Color::new(0.8, 0.5, 0.3)).with_shininess(50.));
+    world.objects.push(background_sphere1);
+
+    let mut background_sphere2 = Shape::Sphere(Sphere::new());
+    background_sphere2.set_transform(translate(4.7, 0.3, 0.4) * scale(0.3, 0.3, 0.3));
+    background_sphere2.set_material(Material::new()
+        .with_color(Color::new(0.9, 0.4, 0.5)).with_shininess(50.));
+    world.objects.push(background_sphere2);
+
+    let mut background_sphere3 = Shape::Sphere(Sphere::new());
+    background_sphere3.set_transform(translate(-1., 0.5, 4.5) * scale(0.5, 0.5, 0.5));
+    background_sphere3.set_material(Material::new()
+        .with_color(Color::new(0.4, 0.9, 0.6)).with_shininess(50.));
+    world.objects.push(background_sphere3);
+
+    let mut background_sphere4 = Shape::Sphere(Sphere::new());
+    background_sphere4.set_transform(translate(-1.7, 0.3, 4.7) * scale(0.3, 0.3, 0.3));
+    background_sphere4.set_material(Material::new()
+        .with_color(Color::new(0.4, 0.6, 0.9)).with_shininess(50.));
+    world.objects.push(background_sphere4);
+
+    // Foreground spheres
+    let mut red_sphere = Shape::Sphere(Sphere::new());
+    red_sphere.set_transform(translate(-0.6, 1., 0.6));
+    red_sphere.set_material(Material::new().with_color(Color::new(1., 0.3, 0.2))
+        .with_specular(0.4).with_shininess(5.));
+    world.objects.push(red_sphere);
+
+    let mut blue_glass_sphere = Shape::Sphere(Sphere::new());
+    blue_glass_sphere.set_transform(translate(0.6, 0.7, -0.6) * scale(0.7, 0.7, 0.7));
+    blue_glass_sphere.set_material(Material::new().with_color(Color::new(0., 0., 0.2))
+        .with_ambient(0.).with_diffuse(0.4).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.9)
+        .with_transparency(0.9).with_refractive_index(1.5));
+    world.objects.push(blue_glass_sphere);
+
+    let mut green_glass_sphere = Shape::Sphere(Sphere::new());
+    green_glass_sphere.set_transform(translate(-0.7, 0.5, -0.8) * scale(0.5, 0.5, 0.5));
+    green_glass_sphere.set_material(Material::new().with_color(Color::new(0., 0.2, 0.))
+        .with_ambient(0.).with_diffuse(0.4).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.9)
+        .with_transparency(0.9).with_refractive_index(1.5));
+    world.objects.push(green_glass_sphere);
+
+    let mut camera = Camera::new(400, 200, 1.152);
+    camera.transform = view_transform(Tuple::point(-2.6, 1.5, -3.9), Tuple::point(-0.6, 1., -0.8), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("reflection_refraction.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
