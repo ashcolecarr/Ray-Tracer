@@ -100,7 +100,7 @@ impl World {
 
             let hit = Intersection::hit(intersections);
             match hit {
-                Some(hit) => hit.t < distance,
+                Some(hit) => hit.t < distance && hit.object.get_casts_shadow(),
                 None => false,
             }
         }).collect::<Vec<bool>>()
@@ -569,5 +569,21 @@ mod tests {
         let actual = world.shade_hit(computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn there_is_no_shadow_when_object_is_set_not_to_cast_shadow() {
+        let mut world = World::new();
+        world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), WHITE));
+        let mut sphere = Shape::Sphere(Sphere::new());
+        sphere.set_transform(translate(0., 3., 0.));
+        sphere.set_casts_shadow(false);
+        world.objects.push(sphere);
+        let plane = Shape::Plane(Plane::new());
+        world.objects.push(plane);
+
+        let point = ORIGIN;
+        
+        assert!(!world.is_shadowed(point)[0]);
     }
 }

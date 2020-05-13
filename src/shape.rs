@@ -1,3 +1,4 @@
+use super::cube::Cube;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
@@ -16,6 +17,7 @@ static mut SAVED_RAY: Ray = Ray {
 pub enum Shape {
     Sphere (Sphere),
     Plane (Plane),
+    Cube (Cube),
     TestShape (TestShape),
 }
 
@@ -26,6 +28,8 @@ pub trait Actionable {
     fn set_transform(&mut self, transform: Matrix);
     fn get_material(&self) -> Material;
     fn set_material(&mut self, material: Material);
+    fn get_casts_shadow(&self) -> bool;
+    fn set_casts_shadow(&mut self, casts_shadow: bool);
 }
 
 impl Actionable for Shape {
@@ -36,6 +40,7 @@ impl Actionable for Shape {
         match self {
             Shape::Sphere(sphere) => sphere.intersect(local_ray),
             Shape::Plane(plane) => plane.intersect(local_ray),
+            Shape::Cube(cube) => cube.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
     }
@@ -46,6 +51,7 @@ impl Actionable for Shape {
         let local_normal = match self {
             Shape::Sphere(sphere) => sphere.normal_at(local_point),
             Shape::Plane(plane) => plane.normal_at(local_point),
+            Shape::Cube(cube) => cube.normal_at(local_point),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
         };
 
@@ -59,6 +65,7 @@ impl Actionable for Shape {
         match self.clone() {
             Shape::Sphere(sphere) => sphere.transform,
             Shape::Plane(plane) => plane.transform,
+            Shape::Cube(cube) => cube.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
     }
@@ -67,6 +74,7 @@ impl Actionable for Shape {
         match self {
             Shape::Sphere(sphere) => sphere.transform = transform,
             Shape::Plane(plane) => plane.transform = transform,
+            Shape::Cube(cube) => cube.transform = transform,
             Shape::TestShape(test_shape) => test_shape.transform = transform,
         }
     }
@@ -75,6 +83,7 @@ impl Actionable for Shape {
         match self.clone() {
             Shape::Sphere(sphere) => sphere.material,
             Shape::Plane(plane) => plane.material,
+            Shape::Cube(cube) => cube.material,
             Shape::TestShape(test_shape) => test_shape.material,
         }
     }
@@ -83,7 +92,26 @@ impl Actionable for Shape {
         match self {
             Shape::Sphere(sphere) => sphere.material = material,
             Shape::Plane(plane) => plane.material = material,
+            Shape::Cube(cube) => cube.material = material,
             Shape::TestShape(test_shape) => test_shape.material = material,
+        }
+    }
+
+    fn get_casts_shadow(&self) -> bool {
+        match self.clone() {
+            Shape::Sphere(sphere) => sphere.casts_shadow,
+            Shape::Plane(plane) => plane.casts_shadow,
+            Shape::Cube(cube) => cube.casts_shadow,
+            Shape::TestShape(test_shape) => test_shape.casts_shadow,
+        }
+    }
+
+    fn set_casts_shadow(&mut self, casts_shadow: bool) {
+        match self {
+            Shape::Sphere(sphere) => sphere.casts_shadow = casts_shadow,
+            Shape::Plane(plane) => plane.casts_shadow = casts_shadow,
+            Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
+            Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
         }
     }
 }
@@ -93,12 +121,13 @@ impl Actionable for Shape {
 pub struct TestShape {
     pub transform: Matrix,
     pub material: Material,
+    pub casts_shadow: bool,
 }
 
 impl PartialEq for TestShape {
     fn eq(&self, other: &Self) -> bool {
-        self.transform == other.transform &&
-            self.material == other.material
+        self.transform == other.transform && self.material == other.material &&
+            self.casts_shadow == other.casts_shadow
     }
 }
 
@@ -107,6 +136,7 @@ impl TestShape {
         Self {
             transform: Matrix::identity(4),
             material: Default::default(),
+            casts_shadow: true,
         }
     }    
 
@@ -235,6 +265,29 @@ mod tests {
         let expected = Tuple::vector(0., 0.97014, -0.24254);
 
         let actual = shape.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.));
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn default_shadow_casting() {
+        let shape = Shape::TestShape(TestShape::new());
+
+        let expected = true;
+
+        let actual = shape.get_casts_shadow();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn assigning_shadow_casting() {
+        let mut shape = Shape::TestShape(TestShape::new());
+        shape.set_casts_shadow(false);
+
+        let expected = false;
+
+        let actual = shape.get_casts_shadow();
 
         assert_eq!(expected, actual);
     }

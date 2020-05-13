@@ -12,12 +12,13 @@ pub struct Plane {
     id: i32,
     pub transform: Matrix,
     pub material: Material,
+    pub casts_shadow: bool,
 }
 
 impl PartialEq for Plane {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && self.transform == other.transform &&
-            self.material == other.material
+            self.material == other.material && self.casts_shadow == other.casts_shadow
     }
 }
 
@@ -29,6 +30,7 @@ impl Plane {
             id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
             transform: Matrix::identity(4),
             material: Default::default(),
+            casts_shadow: true,
         }
     }
     

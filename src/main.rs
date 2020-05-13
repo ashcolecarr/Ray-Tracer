@@ -2,6 +2,7 @@ use ray_tracer::BLACK;
 use ray_tracer::camera::Camera;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
+use ray_tracer::cube::Cube;
 use ray_tracer::Environment;
 use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
@@ -33,7 +34,8 @@ fn main() {
     //draw_pattern();
     //draw_reflective_scene();
     //draw_glass_ball();
-    draw_reflection_refraction();
+    //draw_reflection_refraction();
+    draw_table_scene();
 }
 
 pub fn draw_projectile() {
@@ -405,6 +407,7 @@ pub fn draw_glass_ball() {
     let mut glass_sphere = Shape::Sphere(Sphere::glass_sphere());
     glass_sphere.set_material(glass);
     glass_sphere.set_transform(translate(0., 2., 0.) * scale(1.5, 1.5, 1.5));
+    glass_sphere.set_casts_shadow(false);
 
     let mut air_material: Material = Default::default();
     air_material.transparency = 1.;
@@ -418,7 +421,7 @@ pub fn draw_glass_ball() {
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), Color::new(0.5, 0.5, 0.5)));
     world.objects.push(plane);
     world.objects.push(glass_sphere);
-    world.objects.push(air_bubble);
+    //world.objects.push(air_bubble);
     
     let mut camera = Camera::new(100, 100, PI / 2.);
     camera.transform = view_transform(Tuple::point(0., 5., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
@@ -524,4 +527,139 @@ pub fn draw_reflection_refraction() {
     let canvas = camera.render(world);
 
     fs::write("reflection_refraction.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_table_scene() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 6.9, -5.), Color::new(1., 1., 0.9)));
+
+    let mut floors_pattern = Pattern::Checkered(
+        CheckeredPattern::new(BLACK, Color::new(0.25, 0.25, 0.25)));
+    floors_pattern.set_transform(scale(0.07, 0.07, 0.07));
+    let mut floors = Shape::Cube(Cube::new());
+    floors.set_transform(scale(20., 7., 20.) * translate(0., 1., 0.));
+    floors.set_material(Material::new().with_pattern(floors_pattern)
+        .with_ambient(0.25).with_diffuse(0.7).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.1));
+    world.objects.push(floors);
+
+    let mut walls_pattern = Pattern::Checkered(
+        CheckeredPattern::new(Color::new(0.4863, 0.3765, 0.2941), Color::new(0.3725, 0.2902, 0.2275)));
+    walls_pattern.set_transform(scale(0.05, 20., 0.05));
+    let mut walls = Shape::Cube(Cube::new());
+    walls.set_transform(scale(10., 10., 10.));
+    walls.set_material(Material::new().with_pattern(walls_pattern)
+        .with_ambient(0.1).with_diffuse(0.7).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.1));
+    world.objects.push(walls);
+
+    let mut table_pattern = Pattern::Striped(
+        StripedPattern::new(Color::new(0.5529, 0.4235, 0.3255), Color::new(0.6588, 0.5098, 0.4)));
+    table_pattern.set_transform(scale(0.05, 0.05, 0.05) * rotate(0.1, Axis::Y));
+    let mut table_top = Shape::Cube(Cube::new());
+    table_top.set_transform(translate(0., 3.1, 0.) * scale(3., 0.1, 2.));
+    table_top.set_material(Material::new().with_pattern(table_pattern)
+        .with_ambient(0.1).with_diffuse(0.7).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.2));
+    world.objects.push(table_top);
+
+    let mut table_leg1 = Shape::Cube(Cube::new());
+    table_leg1.set_transform(translate(2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1));
+    table_leg1.set_material(Material::new()
+        .with_color(Color::new(0.5529, 0.4235, 0.3255))
+        .with_ambient(0.2).with_diffuse(0.7));
+    world.objects.push(table_leg1);
+
+    let mut table_leg2 = Shape::Cube(Cube::new());
+    table_leg2.set_transform(translate(2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1));
+    table_leg2.set_material(Material::new()
+        .with_color(Color::new(0.5529, 0.4235, 0.3255))
+        .with_ambient(0.2).with_diffuse(0.7));
+    world.objects.push(table_leg2);
+
+    let mut table_leg3 = Shape::Cube(Cube::new());
+    table_leg3.set_transform(translate(-2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1));
+    table_leg3.set_material(Material::new()
+        .with_color(Color::new(0.5529, 0.4235, 0.3255))
+        .with_ambient(0.2).with_diffuse(0.7));
+    world.objects.push(table_leg3);
+
+    let mut table_leg4 = Shape::Cube(Cube::new());
+    table_leg4.set_transform(translate(-2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1));
+    table_leg4.set_material(Material::new()
+        .with_color(Color::new(0.5529, 0.4235, 0.3255))
+        .with_ambient(0.2).with_diffuse(0.7));
+    world.objects.push(table_leg4);
+    
+    let mut glass_cube = Shape::Cube(Cube::new());
+    glass_cube.set_transform(translate(0., 3.45001, 0.) * rotate(0.2, Axis::Y) * scale(0.25, 0.25, 0.25));
+    glass_cube.set_casts_shadow(false);
+    glass_cube.set_material(Material::new().with_color(Color::new(1., 1., 0.8))
+        .with_ambient(0.).with_diffuse(0.3).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.7).with_transparency(0.7)
+        .with_refractive_index(1.5));
+    world.objects.push(glass_cube);
+
+    let mut little_cube1 = Shape::Cube(Cube::new());
+    little_cube1.set_transform(translate(1., 3.35, -0.9) * rotate(-0.4, Axis::Y) * scale(0.15, 0.15, 0.15));
+    little_cube1.set_material(Material::new().with_color(Color::new(1., 0.5, 0.5))
+        .with_reflective(0.6).with_diffuse(0.3));
+    world.objects.push(little_cube1);
+
+    let mut little_cube2 = Shape::Cube(Cube::new());
+    little_cube2.set_transform(translate(-1.5, 3.27, 0.3) * rotate(0.4, Axis::Y) * scale(0.15, 0.07, 0.15));
+    little_cube2.set_material(Material::new().with_color(Color::new(1., 1., 0.5)));
+    world.objects.push(little_cube2);
+
+    let mut little_cube3 = Shape::Cube(Cube::new());
+    little_cube3.set_transform(translate(0., 3.25, 1.) * rotate(0.4, Axis::Y) * scale(0.2, 0.05, 0.05));
+    little_cube3.set_material(Material::new().with_color(Color::new(0.5, 1., 0.5)));
+    world.objects.push(little_cube3);
+
+    let mut little_cube4 = Shape::Cube(Cube::new());
+    little_cube4.set_transform(translate(-0.6, 3.4, -1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05));
+    little_cube4.set_material(Material::new().with_color(Color::new(0.5, 0.5, 1.)));
+    world.objects.push(little_cube4);
+
+    let mut little_cube5 = Shape::Cube(Cube::new());
+    little_cube5.set_transform(translate(2., 3.4, 1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05));
+    little_cube5.set_material(Material::new().with_color(Color::new(0.5, 1., 1.)));
+    world.objects.push(little_cube5);
+
+    let mut frame1 = Shape::Cube(Cube::new());
+    frame1.set_transform(translate(-10., 4., 1.) * scale(0.05, 1., 1.));
+    frame1.set_material(Material::new().with_color(Color::new(0.7098, 0.2471, 0.2196))
+        .with_diffuse(0.6));
+    world.objects.push(frame1);
+
+    let mut frame2 = Shape::Cube(Cube::new());
+    frame2.set_transform(translate(-10., 3.4, 2.7) * scale(0.05, 0.4, 0.4));
+    frame2.set_material(Material::new().with_color(Color::new(0.2667, 0.2706, 0.6902))
+        .with_diffuse(0.6));
+    world.objects.push(frame2);
+
+    let mut frame3 = Shape::Cube(Cube::new());
+    frame3.set_transform(translate(-10., 4.6, 2.7) * scale(0.05, 0.4, 0.4));
+    frame3.set_material(Material::new().with_color(Color::new(0.3098, 0.5961, 0.3098))
+        .with_diffuse(0.6));
+    world.objects.push(frame3);
+
+    let mut mirror_frame = Shape::Cube(Cube::new());
+    mirror_frame.set_transform(translate(-2., 3.5, 9.95) * scale(5., 1.5, 0.05));
+    mirror_frame.set_material(Material::new().with_color(Color::new(0.3882, 0.2627, 0.1882))
+        .with_diffuse(0.7));
+    world.objects.push(mirror_frame);
+
+    let mut mirror = Shape::Cube(Cube::new());
+    mirror.set_transform(translate(-2., 3.5, 9.95) * scale(4.8, 1.4, 0.06));
+    mirror.set_material(Material::new().with_color(BLACK).with_diffuse(0.)
+        .with_ambient(0.).with_specular(1.).with_shininess(300.).with_reflective(1.));
+    world.objects.push(mirror);
+
+    let mut camera = Camera::new(400, 200, 0.785);
+    camera.transform = view_transform(Tuple::point(8., 6., -8.), Tuple::point(0., 3., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("table_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
