@@ -3,6 +3,7 @@ use ray_tracer::camera::Camera;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
 use ray_tracer::cube::Cube;
+use ray_tracer::cylinder::Cylinder;
 use ray_tracer::Environment;
 use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
@@ -35,7 +36,8 @@ fn main() {
     //draw_reflective_scene();
     //draw_glass_ball();
     //draw_reflection_refraction();
-    draw_table_scene();
+    //draw_table_scene();
+    draw_cylinder_scene();
 }
 
 pub fn draw_projectile() {
@@ -662,4 +664,131 @@ pub fn draw_table_scene() {
     let canvas = camera.render(world);
 
     fs::write("table_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_cylinder_scene() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(1., 6.9, -4.9), Color::new(1., 1., 1.)));
+
+    let mut floor_pattern = Pattern::Checkered(
+        CheckeredPattern::new(Color::new(0.5, 0.5, 0.5), Color::new(0.75, 0.75, 0.75)));
+    floor_pattern.set_transform(rotate(0.3, Axis::Y) * scale(0.25, 0.25, 0.25));
+    let mut floor = Shape::Plane(Plane::new());
+    floor.set_material(Material::new().with_pattern(floor_pattern)
+        .with_ambient(0.2).with_diffuse(0.9).with_specular(0.));
+    world.objects.push(floor);
+
+    let mut cylinder1 = Shape::Cylinder(Cylinder::new());
+    cylinder1.set_minimum(0.);
+    cylinder1.set_maximum(0.75);
+    cylinder1.set_closed(true);
+    cylinder1.set_transform(translate(-1., 0., 1.) * scale(0.5, 1., 0.5));
+    cylinder1.set_material(Material::new().with_color(Color::new(0., 0., 0.6))
+        .with_diffuse(0.1).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.9));
+    world.objects.push(cylinder1);
+
+    // Concentric cylinders
+    let mut cylinder2 = Shape::Cylinder(Cylinder::new());
+    cylinder2.set_minimum(0.);
+    cylinder2.set_maximum(0.2);
+    cylinder2.set_closed(false);
+    cylinder2.set_transform(translate(1., 0., 0.) * scale(0.8, 1., 0.8));
+    cylinder2.set_material(Material::new().with_color(Color::new(1., 1., 0.3))
+        .with_ambient(0.1).with_diffuse(0.8)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder2);
+
+    let mut cylinder3 = Shape::Cylinder(Cylinder::new());
+    cylinder3.set_minimum(0.);
+    cylinder3.set_maximum(0.3);
+    cylinder3.set_closed(false);
+    cylinder3.set_transform(translate(1., 0., 0.) * scale(0.6, 1., 0.6));
+    cylinder3.set_material(Material::new().with_color(Color::new(1., 0.9, 0.4))
+        .with_ambient(0.1).with_diffuse(0.8)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder3);
+
+    let mut cylinder4 = Shape::Cylinder(Cylinder::new());
+    cylinder4.set_minimum(0.);
+    cylinder4.set_maximum(0.4);
+    cylinder4.set_closed(false);
+    cylinder4.set_transform(translate(1., 0., 0.) * scale(0.4, 1., 0.4));
+    cylinder4.set_material(Material::new().with_color(Color::new(1., 0.8, 0.5))
+        .with_ambient(0.1).with_diffuse(0.8)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder4);
+
+    let mut cylinder5 = Shape::Cylinder(Cylinder::new());
+    cylinder5.set_minimum(0.);
+    cylinder5.set_maximum(0.5);
+    cylinder5.set_closed(true);
+    cylinder5.set_transform(translate(1., 0., 0.) * scale(0.2, 1., 0.2));
+    cylinder5.set_material(Material::new().with_color(Color::new(1., 0.7, 0.6))
+        .with_ambient(0.1).with_diffuse(0.8)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder5);
+
+    // Decorative cylinders
+    let mut cylinder6 = Shape::Cylinder(Cylinder::new());
+    cylinder6.set_minimum(0.);
+    cylinder6.set_maximum(0.3);
+    cylinder6.set_closed(true);
+    cylinder6.set_transform(translate(0., 0., -0.75) * scale(0.05, 1., 0.05));
+    cylinder6.set_material(Material::new().with_color(Color::new(1., 0., 0.))
+        .with_ambient(0.1).with_diffuse(0.9)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder6);
+
+    let mut cylinder7 = Shape::Cylinder(Cylinder::new());
+    cylinder7.set_minimum(0.);
+    cylinder7.set_maximum(0.3);
+    cylinder7.set_closed(true);
+    cylinder7.set_transform(translate(0., 0., -2.25) * rotate(-0.15, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
+    cylinder7.set_material(Material::new().with_color(Color::new(1., 1., 0.))
+        .with_ambient(0.1).with_diffuse(0.9)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder7);
+
+    let mut cylinder8 = Shape::Cylinder(Cylinder::new());
+    cylinder8.set_minimum(0.);
+    cylinder8.set_maximum(0.3);
+    cylinder8.set_closed(true);
+    cylinder8.set_transform(translate(0., 0., -2.25) * rotate(-0.3, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
+    cylinder8.set_material(Material::new().with_color(Color::new(0., 1., 0.))
+        .with_ambient(0.1).with_diffuse(0.9)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder8);
+
+    let mut cylinder9 = Shape::Cylinder(Cylinder::new());
+    cylinder9.set_minimum(0.);
+    cylinder9.set_maximum(0.3);
+    cylinder9.set_closed(true);
+    cylinder9.set_transform(translate(0., 0., -2.25) * rotate(-0.45, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
+    cylinder9.set_material(Material::new().with_color(Color::new(0., 1., 1.))
+        .with_ambient(0.1).with_diffuse(0.9)
+        .with_specular(0.9).with_shininess(300.));
+    world.objects.push(cylinder9);
+
+    // Glass Cylinder
+    let mut cylinder10 = Shape::Cylinder(Cylinder::new());
+    cylinder10.set_minimum(0.0001);
+    cylinder10.set_maximum(0.5);
+    cylinder10.set_closed(true);
+    cylinder10.set_transform(translate(0., 0., -1.5) * scale(0.33, 1., 0.33));
+    cylinder10.set_material(Material::new().with_color(Color::new(0.25, 0., 0.))
+        .with_diffuse(0.1).with_specular(0.9)
+        .with_shininess(300.).with_reflective(0.9)
+        .with_transparency(0.9).with_refractive_index(1.5));
+    world.objects.push(cylinder10);
+
+    let mut camera = Camera::new(400, 200, 0.314);
+    camera.transform = view_transform(Tuple::point(8., 3.5, -9.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("cylinder_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

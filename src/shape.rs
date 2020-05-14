@@ -1,4 +1,5 @@
 use super::cube::Cube;
+use super::cylinder::Cylinder;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
@@ -18,6 +19,7 @@ pub enum Shape {
     Sphere (Sphere),
     Plane (Plane),
     Cube (Cube),
+    Cylinder (Cylinder),
     TestShape (TestShape),
 }
 
@@ -30,6 +32,12 @@ pub trait Actionable {
     fn set_material(&mut self, material: Material);
     fn get_casts_shadow(&self) -> bool;
     fn set_casts_shadow(&mut self, casts_shadow: bool);
+    fn get_minimum(&self) -> f64;
+    fn set_minimum(&mut self, minimum: f64);
+    fn get_maximum(&self) -> f64;
+    fn set_maximum(&mut self, maximum: f64);
+    fn get_closed(&self) -> bool;
+    fn set_closed(&mut self, closed: bool);
 }
 
 impl Actionable for Shape {
@@ -41,6 +49,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.intersect(local_ray),
             Shape::Plane(plane) => plane.intersect(local_ray),
             Shape::Cube(cube) => cube.intersect(local_ray),
+            Shape::Cylinder(cylinder) => cylinder.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
     }
@@ -52,6 +61,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.normal_at(local_point),
             Shape::Plane(plane) => plane.normal_at(local_point),
             Shape::Cube(cube) => cube.normal_at(local_point),
+            Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
         };
 
@@ -66,6 +76,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.transform,
             Shape::Plane(plane) => plane.transform,
             Shape::Cube(cube) => cube.transform,
+            Shape::Cylinder(cylinder) => cylinder.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
     }
@@ -75,6 +86,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.transform = transform,
             Shape::Plane(plane) => plane.transform = transform,
             Shape::Cube(cube) => cube.transform = transform,
+            Shape::Cylinder(cylinder) => cylinder.transform = transform,
             Shape::TestShape(test_shape) => test_shape.transform = transform,
         }
     }
@@ -84,6 +96,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.material,
             Shape::Plane(plane) => plane.material,
             Shape::Cube(cube) => cube.material,
+            Shape::Cylinder(cube) => cube.material,
             Shape::TestShape(test_shape) => test_shape.material,
         }
     }
@@ -93,6 +106,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.material = material,
             Shape::Plane(plane) => plane.material = material,
             Shape::Cube(cube) => cube.material = material,
+            Shape::Cylinder(cylinder) => cylinder.material = material,
             Shape::TestShape(test_shape) => test_shape.material = material,
         }
     }
@@ -102,6 +116,7 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.casts_shadow,
             Shape::Plane(plane) => plane.casts_shadow,
             Shape::Cube(cube) => cube.casts_shadow,
+            Shape::Cylinder(cylinder) => cylinder.casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
     }
@@ -111,7 +126,49 @@ impl Actionable for Shape {
             Shape::Sphere(sphere) => sphere.casts_shadow = casts_shadow,
             Shape::Plane(plane) => plane.casts_shadow = casts_shadow,
             Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
+            Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
+        }
+    }
+
+    fn get_minimum(&self) -> f64 {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.minimum,
+            _ => panic!("Minimum property is not available for this shape."),
+        }
+    }
+
+    fn set_minimum(&mut self, minimum: f64) {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.minimum = minimum,
+            _ => panic!("Minimum property is not available for this shape."),
+        }
+    }
+    fn get_maximum(&self) -> f64 {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.maximum,
+            _ => panic!("Maximum property is not available for this shape."),
+        }
+    }
+
+    fn set_maximum(&mut self, maximum: f64) {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.maximum = maximum,
+            _ => panic!("Maximum property is not available for this shape."),
+        }
+    }
+
+    fn get_closed(&self) -> bool {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.closed,
+            _ => panic!("Closed property is not available for this shape."),
+        }
+    }
+
+    fn set_closed(&mut self, closed: bool) {
+        match self {
+            Shape::Cylinder(cylinder) => cylinder.closed = closed,
+            _ => panic!("Closed property is not available for this shape."),
         }
     }
 }
