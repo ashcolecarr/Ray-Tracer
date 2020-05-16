@@ -54,12 +54,12 @@ mod tests {
     use super::*;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
-    use super::super::shape::{Shape, Actionable};
+    use super::super::shape::Shape;
     use super::super::tuple::Tuple;
 
     #[test]
     fn normal_of_plane_is_constant_everywhere() {
-        let plane = Shape::Plane(Plane::new());
+        let plane = Plane::new();
 
         let expected1 = Tuple::vector(0., 1., 0.);
         let expected2 = Tuple::vector(0., 1., 0.);
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn intersect_with_ray_parallel_to_plane() {
-        let plane = Shape::Plane(Plane::new());
+        let plane = Plane::new();
         let ray = Ray::new(Tuple::point(0., 10., 0.), Tuple::vector(0., 0., 1.));
 
         let actual = plane.intersect(ray);
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn intersect_with_coplanar_ray() {
-        let plane = Shape::Plane(Plane::new());
+        let plane = Plane::new();
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
 
         let actual = plane.intersect(ray);
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn ray_intersecting_plane_from_above() {
-        let plane = Shape::Plane(Plane::new());
+        let plane = Plane::new();
         let ray = Ray::new(Tuple::point(0., 1., 0.), Tuple::vector(0., -1., 0.));
 
         let expected_count = 1;
@@ -104,15 +104,16 @@ mod tests {
         let expected_object = plane.clone();
 
         let actual = plane.intersect(ray);
+        let actual_object = if let Shape::Plane(plane) = actual[0].object.clone() { plane } else { panic!("") };
 
         assert_eq!(expected_count, actual.len());
         assert_eq!(expected_t, actual[0].t);
-        assert_eq!(expected_object, actual[0].object);
+        assert_eq!(expected_object, actual_object);
     }
 
     #[test]
     fn ray_intersecting_plane_from_below() {
-        let plane = Shape::Plane(Plane::new());
+        let plane = Plane::new();
         let ray = Ray::new(Tuple::point(0., -1., 0.), Tuple::vector(0., 1., 0.));
 
         let expected_count = 1;
@@ -120,9 +121,10 @@ mod tests {
         let expected_object = plane.clone();
 
         let actual = plane.intersect(ray);
+        let actual_object = if let Shape::Plane(plane) = actual[0].object.clone() { plane } else { panic!("") };
 
         assert_eq!(expected_count, actual.len());
         assert_eq!(expected_t, actual[0].t);
-        assert_eq!(expected_object, actual[0].object);
+        assert_eq!(expected_object, actual_object);
     }
 }

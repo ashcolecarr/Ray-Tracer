@@ -25,7 +25,7 @@ impl PartialEq for Cylinder {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && self.transform == other.transform &&
             self.material == other.material && self.casts_shadow == other.casts_shadow &&
-            self.minimum == other.minimum && self.maximum == other.maximum &&
+            near_eq(self.minimum, other.minimum) && near_eq(self.maximum, other.maximum) &&
             self.closed == other.closed
     }
 }
@@ -132,13 +132,12 @@ mod tests {
     use super::super::near_eq;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
-    use super::super::shape::{Shape, Actionable};
     use super::super::tuple::Tuple;
     use std::f64::INFINITY;
 
     #[test]
     fn ray_misses_cylinder() {
-        let cylinder = Shape::Cylinder(Cylinder::new());
+        let cylinder = Cylinder::new();
         let rays: Vec<Ray> = vec![
             Ray::new(Tuple::point(1., 0., 0.), Tuple::vector(0., 1., 0.).normalize()),
             Ray::new(ORIGIN, Tuple::vector(0., 1., 0.).normalize()),
@@ -154,7 +153,7 @@ mod tests {
 
     #[test]
     fn ray_strikes_cylinder() {
-        let cylinder = Shape::Cylinder(Cylinder::new());
+        let cylinder = Cylinder::new();
         let rays: Vec<Ray> = vec![
             Ray::new(Tuple::point(1., 0., -5.), Tuple::vector(0., 0., 1.).normalize()),
             Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.).normalize()),
@@ -176,7 +175,7 @@ mod tests {
 
     #[test]
     fn normal_vector_on_cylinder() {
-        let cylinder = Shape::Cylinder(Cylinder::new());
+        let cylinder = Cylinder::new();
 
         let points = vec![
             Tuple::point(1., 0., 0.), 
@@ -205,17 +204,17 @@ mod tests {
         let expected_minimum = -INFINITY; 
         let expected_maximum = INFINITY;
         
-        let actual = Shape::Cylinder(Cylinder::new());
+        let actual = Cylinder::new();
 
-        assert_eq!(expected_minimum, actual.get_minimum());
-        assert_eq!(expected_maximum, actual.get_maximum());
+        assert_eq!(expected_minimum, actual.minimum);
+        assert_eq!(expected_maximum, actual.maximum);
     }
 
     #[test]
     fn intersecting_constrained_cylinder() {
-        let mut cylinder = Shape::Cylinder(Cylinder::new());
-        cylinder.set_minimum(1.);
-        cylinder.set_maximum(2.);
+        let mut cylinder = Cylinder::new();
+        cylinder.minimum = 1.;
+        cylinder.maximum = 2.;
         let rays = vec![
             Ray::new(Tuple::point(0., 1.5, 0.), Tuple::vector(0.1, 1., 0.).normalize()),
             Ray::new(Tuple::point(0., 3., -5.), Tuple::vector(0., 0., 1.).normalize()),
@@ -237,21 +236,21 @@ mod tests {
 
     #[test]
     fn default_closed_value_for_cylinder() {
-        let cylinder = Shape::Cylinder(Cylinder::new());
+        let cylinder = Cylinder::new();
 
         let expected = false;
 
-        let actual = cylinder.get_closed();
+        let actual = cylinder.closed;
 
         assert_eq!(expected, actual);
     }
     
     #[test]
     fn intersecting_caps_of_closed_cylinder() {
-        let mut cylinder = Shape::Cylinder(Cylinder::new());
-        cylinder.set_minimum(1.);
-        cylinder.set_maximum(2.);
-        cylinder.set_closed(true);
+        let mut cylinder = Cylinder::new();
+        cylinder.minimum = 1.;
+        cylinder.maximum = 2.;
+        cylinder.closed = true;
         let rays = vec![
             Ray::new(Tuple::point(0., 3., 0.), Tuple::vector(0., -1., 0.).normalize()),
             Ray::new(Tuple::point(0., 3., -2.), Tuple::vector(0., -1., 2.).normalize()),
@@ -272,10 +271,10 @@ mod tests {
 
     #[test]
     fn normal_vector_on_cylinder_end_caps() {
-        let mut cylinder = Shape::Cylinder(Cylinder::new());
-        cylinder.set_minimum(1.);
-        cylinder.set_maximum(2.);
-        cylinder.set_closed(true);
+        let mut cylinder = Cylinder::new();
+        cylinder.minimum = 1.;
+        cylinder.maximum = 2.;
+        cylinder.closed = true;
 
         let points = vec![
             Tuple::point(0., 1., 0.), 

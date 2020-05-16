@@ -2,6 +2,7 @@ pub mod camera;
 pub mod canvas;
 pub mod color;
 pub mod computations;
+pub mod cone;
 pub mod cube;
 pub mod cylinder;
 pub mod intersection;

@@ -95,12 +95,11 @@ mod tests {
     use super::*;
     use super::super::near_eq;
     use super::super::ray::Ray;
-    use super::super::shape::{Shape, Actionable};
     use super::super::tuple::Tuple;
 
     #[test]
     fn ray_intersects_cube() {
-        let cube = Shape::Cube(Cube::new());
+        let cube = Cube::new();
         let rays = vec![
             Ray::new(Tuple::point(5., 0.5, 0.), Tuple::vector(-1., 0., 0.)),
             Ray::new(Tuple::point(-5., 0.5, 0.), Tuple::vector(1., 0., 0.)),
@@ -127,7 +126,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cube() {
-        let cube = Shape::Cube(Cube::new());
+        let cube = Cube::new();
         let rays = vec![
             Ray::new(Tuple::point(-2., 0., 0.), Tuple::vector(0.2673, 0.5345, 0.8018)),
             Ray::new(Tuple::point(0., -2., 0.), Tuple::vector(0.8018, 0.2673, 0.5345)),
@@ -146,7 +145,7 @@ mod tests {
 
     #[test]
     fn normal_on_surface_of_cube() {
-        let cube = Shape::Cube(Cube::new());
+        let cube = Cube::new();
         let points = vec![
             Tuple::point(1., 0.5, -0.8), 
             Tuple::point(-1., -0.2, 0.9),

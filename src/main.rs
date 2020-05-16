@@ -2,6 +2,7 @@ use ray_tracer::BLACK;
 use ray_tracer::camera::Camera;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
+use ray_tracer::cone::Cone;
 use ray_tracer::cube::Cube;
 use ray_tracer::cylinder::Cylinder;
 use ray_tracer::Environment;
@@ -37,7 +38,8 @@ fn main() {
     //draw_glass_ball();
     //draw_reflection_refraction();
     //draw_table_scene();
-    draw_cylinder_scene();
+    //draw_cylinder_scene();
+    draw_cone_scene();
 }
 
 pub fn draw_projectile() {
@@ -791,4 +793,24 @@ pub fn draw_cylinder_scene() {
     let canvas = camera.render(world);
 
     fs::write("cylinder_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_cone_scene() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(10., 10., 10.), Color::new(1., 1., 1.)));
+
+    let mut cone = Shape::Cone(Cone::new());
+    //cone.set_minimum(0.);
+    cone.set_maximum(3.);
+    cone.set_closed(true);
+    //cone.set_transform(translate(-1., 0., 1.) * scale(0.5, 1., 0.5));
+    cone.set_material(Material::new().with_color(Color::new(1., 0., 1.)));
+    world.objects.push(cone);
+
+    let mut camera = Camera::new(100, 100, PI / 3.);
+    camera.transform = view_transform(Tuple::point(4., 5., -4.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("cone_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
