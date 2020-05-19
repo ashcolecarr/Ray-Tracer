@@ -1,6 +1,7 @@
 use super::cone::Cone;
 use super::cube::Cube;
 use super::cylinder::Cylinder;
+use super::group::Group;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
@@ -22,6 +23,7 @@ pub enum Shape {
     Cube (Cube),
     Cylinder (Cylinder),
     Cone (Cone),
+    Group (Group),
     TestShape (TestShape),
 }
 
@@ -40,6 +42,11 @@ pub trait Actionable {
     fn set_maximum(&mut self, maximum: f64);
     fn get_closed(&self) -> bool;
     fn set_closed(&mut self, closed: bool);
+    fn get_parent(&self) -> Option<Shape>;
+    fn set_parent(&mut self, parent: Shape);
+    fn add_child(&mut self, shape: &mut Shape);
+    fn world_to_object(&self, point: Tuple) -> Tuple;
+    fn normal_to_world(&self, normal: Tuple) -> Tuple;
 }
 
 impl Actionable for Shape {
@@ -53,26 +60,24 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.intersect(local_ray),
             Shape::Cylinder(cylinder) => cylinder.intersect(local_ray),
             Shape::Cone(cone) => cone.intersect(local_ray),
+            Shape::Group(group) => group.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
     }
     
     fn normal_at(&self, world_point: Tuple) -> Tuple {
-        let inverse = self.get_transform().inverse().unwrap();
-        let local_point = inverse.clone() * world_point;
+        let local_point = self.world_to_object(world_point);
         let local_normal = match self {
             Shape::Sphere(sphere) => sphere.normal_at(local_point),
             Shape::Plane(plane) => plane.normal_at(local_point),
             Shape::Cube(cube) => cube.normal_at(local_point),
             Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
             Shape::Cone(cone) => cone.normal_at(local_point),
+            Shape::Group(_group) => panic!("Normal at cannot be calculated on a group."),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
         };
 
-        let mut world_normal = inverse.transpose() * local_normal;
-        world_normal.w = 0.;
-
-        world_normal.normalize()
+        self.normal_to_world(local_normal)
     }
 
     fn get_transform(&self) -> Matrix {
@@ -82,6 +87,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.transform,
             Shape::Cylinder(cylinder) => cylinder.transform,
             Shape::Cone(cone) => cone.transform,
+            Shape::Group(group) => group.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
     }
@@ -93,6 +99,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.transform = transform,
             Shape::Cylinder(cylinder) => cylinder.transform = transform,
             Shape::Cone(cone) => cone.transform = transform,
+            Shape::Group(group) => group.transform = transform,
             Shape::TestShape(test_shape) => test_shape.transform = transform,
         }
     }
@@ -104,6 +111,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.material,
             Shape::Cylinder(cylinder) => cylinder.material,
             Shape::Cone(cone) => cone.material,
+            Shape::Group(_group) => panic!("Material property does not exist for a group."),
             Shape::TestShape(test_shape) => test_shape.material,
         }
     }
@@ -115,6 +123,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.material = material,
             Shape::Cylinder(cylinder) => cylinder.material = material,
             Shape::Cone(cone) => cone.material = material,
+            Shape::Group(_group) => panic!("Material property does not exist for a group."),
             Shape::TestShape(test_shape) => test_shape.material = material,
         }
     }
@@ -126,6 +135,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow,
+            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
     }
@@ -137,6 +147,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow = casts_shadow,
+            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
             Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
         }
     }
@@ -187,6 +198,57 @@ impl Actionable for Shape {
             _ => panic!("Closed property is not available for this shape."),
         }
     }
+    
+    fn get_parent(&self) -> Option<Shape> {
+        match self.clone() {
+            Shape::Sphere(sphere) => *sphere.parent,
+            Shape::Plane(plane) => *plane.parent,
+            Shape::Cube(cube) => *cube.parent,
+            Shape::Cylinder(cylinder) => *cylinder.parent,
+            Shape::Cone(cone) => *cone.parent,
+            Shape::Group(group) => *group.parent,
+            Shape::TestShape(test_shape) => *test_shape.parent,
+        }
+    }
+
+    fn set_parent(&mut self, parent: Shape) {
+        match self {
+            Shape::Sphere(sphere) => sphere.parent = Box::new(Some(parent)),
+            Shape::Plane(plane) => plane.parent = Box::new(Some(parent)),
+            Shape::Cube(cube) => cube.parent = Box::new(Some(parent)),
+            Shape::Cylinder(cylinder) => cylinder.parent = Box::new(Some(parent)),
+            Shape::Cone(cone) => cone.parent = Box::new(Some(parent)),
+            Shape::Group(group) => group.parent = Box::new(Some(parent)),
+            Shape::TestShape(test_shape) => test_shape.parent = Box::new(Some(parent)),
+        }
+    }
+    
+    fn add_child(&mut self, shape: &mut Shape) {
+        match self {
+            Shape::Group(group) => group.add_child(shape),
+            _ => panic!("Children can be added to groups only."),
+        }
+    }
+
+    fn world_to_object(&self, point: Tuple) -> Tuple {
+        self.get_transform().inverse().unwrap() * if self.get_parent().is_some() {
+            self.get_parent().unwrap().world_to_object(point)
+        } else {
+            point
+        }
+    }
+
+    fn normal_to_world(&self, normal: Tuple) -> Tuple {
+        let mut new_normal = self.get_transform().inverse().unwrap().transpose() * normal;
+        new_normal.w = 0.;
+        new_normal = new_normal.normalize();
+
+        if self.get_parent().is_some() {
+            self.get_parent().unwrap().normal_to_world(new_normal)
+        } else {
+            new_normal
+        }
+    }
 }
 
 /// For testing purposes only--not meant to be used directly.
@@ -195,6 +257,7 @@ pub struct TestShape {
     pub transform: Matrix,
     pub material: Material,
     pub casts_shadow: bool,
+    pub parent: Box<Option<Shape>>,
 }
 
 impl PartialEq for TestShape {
@@ -210,6 +273,7 @@ impl TestShape {
             transform: Matrix::identity(4),
             material: Default::default(),
             casts_shadow: true,
+            parent: Box::new(None),
         }
     }    
 
@@ -361,6 +425,67 @@ mod tests {
         let expected = false;
 
         let actual = shape.get_casts_shadow();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn shape_has_parent_attribute() {
+        let actual = TestShape::new();
+
+        assert!(actual.parent.is_none());
+    }
+
+    #[test]
+    fn converting_point_from_world_space_to_object_space() {
+        let mut group1 = Shape::Group(Group::new());
+        group1.set_transform(rotate(PI / 2., Axis::Y));
+        let mut group2 = Shape::Group(Group::new());
+        group2.set_transform(scale(2., 2., 2.));
+        group1.add_child(&mut group2);
+        let mut shape = Shape::Sphere(Sphere::new());
+        shape.set_transform(translate(5., 0., 0.));
+        group2.add_child(&mut shape);
+
+        let expected = Tuple::point(0., 0., -1.);
+
+        let actual = shape.world_to_object(Tuple::point(-2., 0., -10.));
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn converting_normal_from_object_to_world_space() {
+        let mut group1 = Shape::Group(Group::new());
+        group1.set_transform(rotate(PI / 2., Axis::Y));
+        let mut group2 = Shape::Group(Group::new());
+        group2.set_transform(scale(1., 2., 3.));
+        group1.add_child(&mut group2);
+        let mut shape = Shape::Sphere(Sphere::new());
+        shape.set_transform(translate(5., 0., 0.));
+        group2.add_child(&mut shape);
+
+        let expected = Tuple::vector(0.28571, 0.42857, -0.85714);
+
+        let actual = shape.normal_to_world(Tuple::vector(3_f64.sqrt() / 3., 3_f64.sqrt() / 3., 3_f64.sqrt() / 3.));
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn finding_normal_on_child_object() {
+        let mut group1 = Shape::Group(Group::new());
+        group1.set_transform(rotate(PI / 2., Axis::Y));
+        let mut group2 = Shape::Group(Group::new());
+        group2.set_transform(scale(1., 2., 3.));
+        group1.add_child(&mut group2);
+        let mut shape = Shape::Sphere(Sphere::new());
+        shape.set_transform(translate(5., 0., 0.));
+        group2.add_child(&mut shape);
+
+        let expected = Tuple::vector(0.2857, 0.42854, -0.85716);
+
+        let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774));
 
         assert_eq!(expected, actual);
     }

@@ -21,7 +21,7 @@ pub trait PatternTrait {
 
 impl PatternTrait for Pattern {
     fn pattern_at_shape(&self, object: Shape, world_point: Tuple) -> Color {
-        let object_point = object.get_transform().inverse().unwrap() * world_point;
+        let object_point = object.world_to_object(world_point);
         let pattern_point = self.get_transform().inverse().unwrap() * object_point;
 
         match self {

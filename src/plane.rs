@@ -13,6 +13,7 @@ pub struct Plane {
     pub transform: Matrix,
     pub material: Material,
     pub casts_shadow: bool,
+    pub parent: Box<Option<Shape>>,
 }
 
 impl PartialEq for Plane {
@@ -31,6 +32,7 @@ impl Plane {
             transform: Matrix::identity(4),
             material: Default::default(),
             casts_shadow: true,
+            parent: Box::new(None),
         }
     }
     

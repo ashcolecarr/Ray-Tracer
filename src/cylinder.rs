@@ -19,6 +19,7 @@ pub struct Cylinder {
     pub minimum: f64,
     pub maximum: f64,
     pub closed: bool,
+    pub parent: Box<Option<Shape>>,
 }
 
 impl PartialEq for Cylinder {
@@ -42,6 +43,7 @@ impl Cylinder {
             minimum: -INFINITY,
             maximum: INFINITY,
             closed: false,
+            parent: Box::new(None),
         }
     }
 
