@@ -1,46 +1,49 @@
 use super::intersection::Intersection;
 use super::material::Material;
-use super::matrix::Matrix;
 use super::ORIGIN;
 use super::ray::Ray;
-use super::shape::Shape;
+use super::shape::{Shape, ShapeCommon};
 use super::tuple::Tuple;
-use std::sync::atomic::{AtomicI32, Ordering};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Sphere {
-    id: i32,
-    pub transform: Matrix,
-    pub material: Material,
-    pub casts_shadow: bool,
-    pub parent: Box<Option<Shape>>,
+    pub shape: Shape,
 }
 
 impl PartialEq for Sphere {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.transform == other.transform &&
-            self.material == other.material && self.casts_shadow == other.casts_shadow
+        self.shape == other.shape
     }
 }
 
 impl Sphere {
     pub fn new() -> Self {
-        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
-
         Self {
-            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
-            transform: Matrix::identity(4),
-            material: Default::default(),
-            casts_shadow: true,
-            parent: Box::new(None),
+            shape: Shape::new(),
         }
     }
 
-    pub fn get_id(&self) -> &i32 {
-        &self.id
+    pub fn glass_sphere() -> Self {
+        let material = Material::new().with_transparency(1.)
+            .with_refractive_index(1.5);
+
+        let mut sphere = Sphere::new();
+        sphere.get_shape_mut().material = material;
+
+        sphere
+    }
+}
+
+impl ShapeCommon for Sphere {
+    fn get_shape(&self) -> &Shape {
+        &self.shape
     }
 
-    pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
+    fn get_shape_mut(&self) -> &mut Shape {
+        &mut self.shape
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         let sphere_to_ray = ray.origin - ORIGIN;
 
         let a = ray.direction.dot(ray.direction);
@@ -57,34 +60,23 @@ impl Sphere {
         let t2 = (-b + discriminant.sqrt()) / (2. * a);
 
         vec![
-            Intersection::new(t1, Shape::Sphere(self.clone())),
-            Intersection::new(t2, Shape::Sphere(self.clone())),
+            Intersection::new(t1, self),
+            Intersection::new(t2, self),
         ]
     }
 
-    pub fn normal_at(&self, world_point: Tuple) -> Tuple {
+    fn local_normal_at(&self, world_point: Tuple) -> Tuple {
         world_point - ORIGIN
-    }
-
-    pub fn glass_sphere() -> Self {
-        let mut material: Material = Default::default();
-        material.transparency = 1.;
-        material.refractive_index = 1.5;
-
-        let mut sphere = Sphere::new();
-        sphere.material = material;
-
-        sphere
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::matrix::Matrix;
     use super::super::near_eq;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
-    use super::super::shape::Shape;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -178,12 +170,12 @@ mod tests {
         let sphere = Sphere::new();
 
         let expected_count = 2;
-        let expected_object1 = sphere.clone();
-        let expected_object2 = sphere.clone();
+        let expected_object1 = sphere.get_shape();
+        let expected_object2 = sphere.get_shape();
 
         let actual = sphere.intersect(ray);
-        let actual_object1 = if let Shape::Sphere(sphere) = actual[0].object.clone() { sphere } else { panic!("") };
-        let actual_object2 = if let Shape::Sphere(sphere) = actual[1].object.clone() { sphere } else { panic!("") };
+        let actual_object1 = actual[0].object.get_shape();
+        let actual_object2 = actual[1].object.get_shape();
 
         assert_eq!(expected_count, actual.len());
         assert_eq!(expected_object1, actual_object1);
@@ -255,8 +247,8 @@ mod tests {
 
         let actual = Sphere::glass_sphere();
 
-        assert_eq!(expected_transform, actual.transform);
-        assert_eq!(expected_transparency, actual.material.transparency);
-        assert_eq!(expected_refractive_index, actual.material.refractive_index);
+        assert_eq!(expected_transform, actual.get_transform());
+        assert_eq!(expected_transparency, actual.get_material().transparency);
+        assert_eq!(expected_refractive_index, actual.get_material().refractive_index);
     }
 }

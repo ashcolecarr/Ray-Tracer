@@ -1,7 +1,7 @@
 use super::intersection::Intersection;
 use super::matrix::Matrix;
 use super::ray::Ray;
-use super::shape::{Shape, Actionable};
+use super::shape::{Shape, CommonShape};
 use std::sync::atomic::{AtomicI32, Ordering};
 
 #[derive(Debug, Clone)]

@@ -15,7 +15,7 @@ use ray_tracer::pattern::*;
 use ray_tracer::plane::Plane;
 use ray_tracer::Projectile;
 use ray_tracer::ray::Ray;
-use ray_tracer::shape::{Shape, Actionable};
+use ray_tracer::shape::{Shape, CommonShape};
 use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;

@@ -1,63 +1,27 @@
 use super::EPSILON;
 use super::intersection::Intersection;
-use super::material::Material;
-use super::matrix::Matrix;
 use super::near_eq;
 use super::ray::Ray;
-use super::shape::Shape;
+use super::shape::{Shape, ShapeCommon};
 use super::tuple::Tuple;
 use std::f64::INFINITY;
-use std::sync::atomic::{AtomicI32, Ordering};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Cube {
-    id: i32,
-    pub transform: Matrix,
-    pub material: Material,
-    pub casts_shadow: bool,
-    pub parent: Box<Option<Shape>>,
+    pub shape: Shape,
 }
 
 impl PartialEq for Cube {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.transform == other.transform &&
-            self.material == other.material && self.casts_shadow == other.casts_shadow
+        self.shape == other.shape
     }
 }
 
 impl Cube {
     pub fn new() -> Self {
-        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
-
         Self {
-            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
-            transform: Matrix::identity(4),
-            material: Default::default(),
-            casts_shadow: true,
-            parent: Box::new(None),
+            shape: Shape::new(),
         }
-    }
-
-    pub fn get_id(&self) -> &i32 {
-        &self.id
-    }
-
-    pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
-        let (xtmin, xtmax) = Cube::check_axis(ray.origin.x, ray.direction.x);
-        let (ytmin, ytmax) = Cube::check_axis(ray.origin.y, ray.direction.y);
-        let (ztmin, ztmax) = Cube::check_axis(ray.origin.z, ray.direction.z);
-
-        let tmin = vec![xtmin, ytmin, ztmin].iter().fold(0./0., |max, &n| f64::max(max, n));
-        let tmax = vec![xtmax, ytmax, ztmax].iter().fold(0./0., |min, &n| f64::min(min, n));
-
-        if tmin > tmax {
-            return vec![];
-        }
-
-        vec![
-            Intersection::new(tmin, Shape::Cube(self.clone())),
-            Intersection::new(tmax, Shape::Cube(self.clone())),
-        ]
     }
 
     fn check_axis(origin: f64, direction: f64) -> (f64, f64) {
@@ -77,8 +41,36 @@ impl Cube {
             (tmin, tmax)
         }
     }
+}
 
-    pub fn normal_at(&self, world_point: Tuple) -> Tuple {
+impl ShapeCommon for Cube {
+    fn get_shape(&self) -> &Shape {
+        &self.shape
+    }
+
+    fn get_shape_mut(&self) -> &mut Shape {
+        &mut self.shape
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        let (xtmin, xtmax) = Cube::check_axis(ray.origin.x, ray.direction.x);
+        let (ytmin, ytmax) = Cube::check_axis(ray.origin.y, ray.direction.y);
+        let (ztmin, ztmax) = Cube::check_axis(ray.origin.z, ray.direction.z);
+
+        let tmin = vec![xtmin, ytmin, ztmin].iter().fold(0./0., |max, &n| f64::max(max, n));
+        let tmax = vec![xtmax, ytmax, ztmax].iter().fold(0./0., |min, &n| f64::min(min, n));
+
+        if tmin > tmax {
+            return vec![];
+        }
+
+        vec![
+            Intersection::new(tmin, self),
+            Intersection::new(tmax, self),
+        ]
+    }
+
+    fn local_normal_at(&self, world_point: Tuple) -> Tuple {
         let maxc = vec![world_point.x.abs(), world_point.y.abs(), world_point.z.abs()]
             .iter().fold(0./0., |max, &n| f64::max(max, n));
         

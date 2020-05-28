@@ -2,22 +2,22 @@ use super::computations::Computations;
 use super::EPSILON;
 use super::near_eq;
 use super::ray::Ray;
-use super::shape::{Shape, Actionable};
+use super::shape::{Shape, ShapeCommon};
 
-#[derive(Debug, Clone)]
-pub struct Intersection {
+#[derive(Debug)]
+pub struct Intersection<'a> {
     pub t: f64,
-    pub object: Shape,
+    pub object: &'a dyn ShapeCommon,
 }
 
-impl PartialEq for Intersection {
+impl<'a> PartialEq for Intersection<'a> {
     fn eq(&self, other: &Self) -> bool {
-        near_eq(self.t, other.t) && self.object == other.object
+        near_eq(self.t, other.t) && self.object.get_shape() == other.object.get_shape()
     }
 }
 
-impl Intersection {
-    pub fn new(t: f64, object: Shape) -> Self {
+impl<'a> Intersection<'a> {
+    pub fn new(t: f64, object: &'a dyn ShapeCommon) -> Self {
         Self { t, object }
     }
 

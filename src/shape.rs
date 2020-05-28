@@ -9,6 +9,10 @@ use super::plane::Plane;
 use super::ray::Ray;
 use super::sphere::Sphere;
 use super::tuple::Tuple;
+use core::fmt::Debug;
+use core::ptr::null_mut;
+use core::sync::atomic::AtomicPtr;
+use std::sync::atomic::{AtomicI32, Ordering};
 
 // For testing only.
 static mut SAVED_RAY: Ray = Ray {
@@ -16,225 +20,62 @@ static mut SAVED_RAY: Ray = Ray {
     direction: Tuple { x: 0., y: 0., z: 0., w: 0. },
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Shape {
-    Sphere (Sphere),
-    Plane (Plane),
-    Cube (Cube),
-    Cylinder (Cylinder),
-    Cone (Cone),
-    Group (Group),
-    TestShape (TestShape),
+#[derive(Debug)]
+pub struct Shape {
+    id: i32,
+    pub transform: Matrix,
+    pub material: Material,
+    pub casts_shadow: bool,
+    pub parent: AtomicPtr<Group>,
 }
 
-pub trait Actionable {
-    fn intersect(&self, ray: Ray) -> Vec<Intersection>;
-    fn normal_at(&self, world_point: Tuple) -> Tuple;
-    fn get_transform(&self) -> Matrix;
-    fn set_transform(&mut self, transform: Matrix);
-    fn get_material(&self) -> Material;
-    fn set_material(&mut self, material: Material);
-    fn get_casts_shadow(&self) -> bool;
-    fn set_casts_shadow(&mut self, casts_shadow: bool);
-    fn get_minimum(&self) -> f64;
-    fn set_minimum(&mut self, minimum: f64);
-    fn get_maximum(&self) -> f64;
-    fn set_maximum(&mut self, maximum: f64);
-    fn get_closed(&self) -> bool;
-    fn set_closed(&mut self, closed: bool);
-    fn get_parent(&self) -> Option<Shape>;
-    fn set_parent(&mut self, parent: Shape);
-    fn add_child(&mut self, shape: &mut Shape);
-    fn world_to_object(&self, point: Tuple) -> Tuple;
-    fn normal_to_world(&self, normal: Tuple) -> Tuple;
+impl PartialEq for Shape {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && self.transform == other.transform &&
+            self.material == other.material && self.casts_shadow == other.casts_shadow
+    }
 }
 
-impl Actionable for Shape {
+impl Shape {
+    pub fn new() -> Self {
+        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
+
+        Self {
+            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
+            transform: Matrix::identity(4),
+            material: Default::default(),
+            casts_shadow: true,
+            parent: AtomicPtr::new(null_mut()),
+        }
+    }
+}
+
+pub trait ShapeCommon: Debug {
+    fn get_shape(&self) -> &Shape;
+    fn get_shape_mut(&self) -> &mut Shape;
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection>;
+    fn local_normal_at(&self, world_point: Tuple) -> Tuple;
+    fn add_child(&mut self, shape: &mut Shape) {}
+
     fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         let inverse = self.get_transform().inverse().unwrap();
         let local_ray = ray.transform(inverse);
 
-        match self {
-            Shape::Sphere(sphere) => sphere.intersect(local_ray),
-            Shape::Plane(plane) => plane.intersect(local_ray),
-            Shape::Cube(cube) => cube.intersect(local_ray),
-            Shape::Cylinder(cylinder) => cylinder.intersect(local_ray),
-            Shape::Cone(cone) => cone.intersect(local_ray),
-            Shape::Group(group) => group.intersect(local_ray),
-            Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
-        }
+        self.local_intersect(ray)
     }
     
     fn normal_at(&self, world_point: Tuple) -> Tuple {
         let local_point = self.world_to_object(world_point);
-        let local_normal = match self {
-            Shape::Sphere(sphere) => sphere.normal_at(local_point),
-            Shape::Plane(plane) => plane.normal_at(local_point),
-            Shape::Cube(cube) => cube.normal_at(local_point),
-            Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
-            Shape::Cone(cone) => cone.normal_at(local_point),
-            Shape::Group(_group) => panic!("Normal at cannot be calculated on a group."),
-            Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
-        };
+        let local_normal = self.local_normal_at(world_point);
 
         self.normal_to_world(local_normal)
     }
 
-    fn get_transform(&self) -> Matrix {
-        match self.clone() {
-            Shape::Sphere(sphere) => sphere.transform,
-            Shape::Plane(plane) => plane.transform,
-            Shape::Cube(cube) => cube.transform,
-            Shape::Cylinder(cylinder) => cylinder.transform,
-            Shape::Cone(cone) => cone.transform,
-            Shape::Group(group) => group.transform,
-            Shape::TestShape(test_shape) => test_shape.transform,
-        }
-    }
-
-    fn set_transform(&mut self, transform: Matrix) {
-        match self {
-            Shape::Sphere(sphere) => sphere.transform = transform,
-            Shape::Plane(plane) => plane.transform = transform,
-            Shape::Cube(cube) => cube.transform = transform,
-            Shape::Cylinder(cylinder) => cylinder.transform = transform,
-            Shape::Cone(cone) => cone.transform = transform,
-            Shape::Group(group) => group.transform = transform,
-            Shape::TestShape(test_shape) => test_shape.transform = transform,
-        }
-    }
-
-    fn get_material(&self) -> Material {
-        match self.clone() {
-            Shape::Sphere(sphere) => sphere.material,
-            Shape::Plane(plane) => plane.material,
-            Shape::Cube(cube) => cube.material,
-            Shape::Cylinder(cylinder) => cylinder.material,
-            Shape::Cone(cone) => cone.material,
-            Shape::Group(_group) => panic!("Material property does not exist for a group."),
-            Shape::TestShape(test_shape) => test_shape.material,
-        }
-    }
-
-    fn set_material(&mut self, material: Material) {
-        match self {
-            Shape::Sphere(sphere) => sphere.material = material,
-            Shape::Plane(plane) => plane.material = material,
-            Shape::Cube(cube) => cube.material = material,
-            Shape::Cylinder(cylinder) => cylinder.material = material,
-            Shape::Cone(cone) => cone.material = material,
-            Shape::Group(_group) => panic!("Material property does not exist for a group."),
-            Shape::TestShape(test_shape) => test_shape.material = material,
-        }
-    }
-
-    fn get_casts_shadow(&self) -> bool {
-        match self.clone() {
-            Shape::Sphere(sphere) => sphere.casts_shadow,
-            Shape::Plane(plane) => plane.casts_shadow,
-            Shape::Cube(cube) => cube.casts_shadow,
-            Shape::Cylinder(cylinder) => cylinder.casts_shadow,
-            Shape::Cone(cone) => cone.casts_shadow,
-            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
-            Shape::TestShape(test_shape) => test_shape.casts_shadow,
-        }
-    }
-
-    fn set_casts_shadow(&mut self, casts_shadow: bool) {
-        match self {
-            Shape::Sphere(sphere) => sphere.casts_shadow = casts_shadow,
-            Shape::Plane(plane) => plane.casts_shadow = casts_shadow,
-            Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
-            Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
-            Shape::Cone(cone) => cone.casts_shadow = casts_shadow,
-            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
-            Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
-        }
-    }
-
-    fn get_minimum(&self) -> f64 {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.minimum,
-            Shape::Cone(cone) => cone.minimum,
-            _ => panic!("Minimum property is not available for this shape."),
-        }
-    }
-
-    fn set_minimum(&mut self, minimum: f64) {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.minimum = minimum,
-            Shape::Cone(cone) => cone.minimum = minimum,
-            _ => panic!("Minimum property is not available for this shape."),
-        }
-    }
-    fn get_maximum(&self) -> f64 {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.maximum,
-            Shape::Cone(cone) => cone.maximum,
-            _ => panic!("Maximum property is not available for this shape."),
-        }
-    }
-
-    fn set_maximum(&mut self, maximum: f64) {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.maximum = maximum,
-            Shape::Cone(cone) => cone.maximum = maximum,
-            _ => panic!("Maximum property is not available for this shape."),
-        }
-    }
-
-    fn get_closed(&self) -> bool {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.closed,
-            Shape::Cone(cone) => cone.closed,
-            _ => panic!("Closed property is not available for this shape."),
-        }
-    }
-
-    fn set_closed(&mut self, closed: bool) {
-        match self {
-            Shape::Cylinder(cylinder) => cylinder.closed = closed,
-            Shape::Cone(cone) => cone.closed = closed,
-            _ => panic!("Closed property is not available for this shape."),
-        }
-    }
-    
-    fn get_parent(&self) -> Option<Shape> {
-        match self.clone() {
-            Shape::Sphere(sphere) => *sphere.parent,
-            Shape::Plane(plane) => *plane.parent,
-            Shape::Cube(cube) => *cube.parent,
-            Shape::Cylinder(cylinder) => *cylinder.parent,
-            Shape::Cone(cone) => *cone.parent,
-            Shape::Group(group) => *group.parent,
-            Shape::TestShape(test_shape) => *test_shape.parent,
-        }
-    }
-
-    fn set_parent(&mut self, parent: Shape) {
-        match self {
-            Shape::Sphere(sphere) => sphere.parent = Box::new(Some(parent)),
-            Shape::Plane(plane) => plane.parent = Box::new(Some(parent)),
-            Shape::Cube(cube) => cube.parent = Box::new(Some(parent)),
-            Shape::Cylinder(cylinder) => cylinder.parent = Box::new(Some(parent)),
-            Shape::Cone(cone) => cone.parent = Box::new(Some(parent)),
-            Shape::Group(group) => group.parent = Box::new(Some(parent)),
-            Shape::TestShape(test_shape) => test_shape.parent = Box::new(Some(parent)),
-        }
-    }
-    
-    fn add_child(&mut self, shape: &mut Shape) {
-        match self {
-            Shape::Group(group) => group.add_child(shape),
-            _ => panic!("Children can be added to groups only."),
-        }
-    }
-
     fn world_to_object(&self, point: Tuple) -> Tuple {
-        self.get_transform().inverse().unwrap() * if self.get_parent().is_some() {
-            self.get_parent().unwrap().world_to_object(point)
-        } else {
-            point
+        let parent = self.get_parent();
+        self.get_transform().inverse().unwrap() * match parent {
+            Some(parent) => self.get_parent().world_to_object(point),
+            None => point,
         }
     }
 
@@ -243,41 +84,82 @@ impl Actionable for Shape {
         new_normal.w = 0.;
         new_normal = new_normal.normalize();
 
-        if self.get_parent().is_some() {
-            self.get_parent().unwrap().normal_to_world(new_normal)
-        } else {
-            new_normal
+        let parent = self.get_parent();
+        match parent {
+            Some(parent) => self.get_parent().normal_to_world(new_normal),
+            None => new_normal,
         }
+    }
+
+    fn get_id(&self) -> i32 {
+        self.get_shape().id
+    }
+
+    fn get_transform(&self) -> Matrix {
+        self.get_shape().transform
+    }
+
+    fn set_transform(&mut self, transform: Matrix) {
+        self.get_shape_mut().transform = transform;
+    }
+
+    fn get_material(&self) -> Material {
+        self.get_shape().material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.get_shape_mut().material = material;
+    }
+
+    fn get_casts_shadow(&self) -> bool {
+        self.get_shape().casts_shadow
+    }
+
+    fn set_casts_shadow(&mut self, casts_shadow: bool) {
+        self.get_shape_mut().casts_shadow = casts_shadow;
+    }
+
+    fn get_parent(&self) -> Option<&Group> {
+        unsafe {
+            self.get_shape().parent.load(Ordering::Relaxed).as_ref()
+        }
+    }
+
+    fn set_parent(&mut self, group: &mut Group) {
+        self.get_shape_mut().parent = AtomicPtr::new(group);
     }
 }
 
 /// For testing purposes only--not meant to be used directly.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TestShape {
-    pub transform: Matrix,
-    pub material: Material,
-    pub casts_shadow: bool,
-    pub parent: Box<Option<Shape>>,
+    pub shape: Shape,
 }
 
 impl PartialEq for TestShape {
     fn eq(&self, other: &Self) -> bool {
-        self.transform == other.transform && self.material == other.material &&
-            self.casts_shadow == other.casts_shadow
+        self.shape == other.shape
     }
 }
 
 impl TestShape {
     pub fn new() -> Self {
         Self {
-            transform: Matrix::identity(4),
-            material: Default::default(),
-            casts_shadow: true,
-            parent: Box::new(None),
+            shape: Shape::new(),
         }
     }    
+}
 
-    pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
+impl ShapeCommon for TestShape {
+    fn get_shape(&self) -> &Shape {
+        &self.shape
+    }
+
+    fn get_shape_mut(&self) -> &mut Shape {
+        &mut self.shape
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         unsafe {
             SAVED_RAY = ray;
         }
@@ -285,11 +167,10 @@ impl TestShape {
         vec![]
     }
 
-    pub fn normal_at(&self, world_point: Tuple) -> Tuple {
+    fn local_normal_at(&self, world_point: Tuple) -> Tuple {
         Tuple::vector(world_point.x, world_point.y, world_point.z)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
