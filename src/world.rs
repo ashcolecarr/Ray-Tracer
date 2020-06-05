@@ -6,7 +6,7 @@ use super::light::Light;
 use super::material::Material;
 use super::near_eq;
 use super::ray::Ray;
-use super::shape::{Shape, Actionable};
+use super::shape::{Shape, CommonShape};
 use super::sphere::Sphere;
 use super::transformation::*;
 use super::tuple::Tuple;
@@ -148,7 +148,7 @@ mod tests {
     use super::super::pattern::*;
     use super::super::plane::Plane;
     use super::super::ray::Ray;
-    use super::super::shape::{Shape, Actionable};
+    use super::super::shape::{Shape, CommonShape};
     use super::super::tuple::Tuple;
 
     #[test]

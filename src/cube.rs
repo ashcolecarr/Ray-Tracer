@@ -1,4 +1,5 @@
 use super::EPSILON;
+use super::generate_object_id;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
@@ -7,7 +8,6 @@ use super::ray::Ray;
 use super::shape::Shape;
 use super::tuple::Tuple;
 use std::f64::INFINITY;
-use std::sync::atomic::{AtomicI32, Ordering};
 
 #[derive(Debug, Clone)]
 pub struct Cube {
@@ -15,26 +15,25 @@ pub struct Cube {
     pub transform: Matrix,
     pub material: Material,
     pub casts_shadow: bool,
-    pub parent: Box<Option<Shape>>,
+    pub parent: Option<i32>,
 }
 
 impl PartialEq for Cube {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.transform == other.transform &&
-            self.material == other.material && self.casts_shadow == other.casts_shadow
+        self.id == other.id && self.transform == other.transform && 
+            self.material == other.material && self.casts_shadow == other.casts_shadow &&
+            self.parent == other.parent
     }
 }
 
 impl Cube {
     pub fn new() -> Self {
-        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
-
         Self {
-            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
+            id: generate_object_id(),
             transform: Matrix::identity(4),
             material: Default::default(),
             casts_shadow: true,
-            parent: Box::new(None),
+            parent: None,
         }
     }
 

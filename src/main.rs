@@ -6,6 +6,7 @@ use ray_tracer::cone::Cone;
 use ray_tracer::cube::Cube;
 use ray_tracer::cylinder::Cylinder;
 use ray_tracer::Environment;
+use ray_tracer::hexagon;
 use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
 use ray_tracer::material::Material;
@@ -15,7 +16,7 @@ use ray_tracer::pattern::*;
 use ray_tracer::plane::Plane;
 use ray_tracer::Projectile;
 use ray_tracer::ray::Ray;
-use ray_tracer::shape::{Shape, Actionable};
+use ray_tracer::shape::{Shape, CommonShape};
 use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
@@ -39,7 +40,8 @@ fn main() {
     //draw_reflection_refraction();
     //draw_table_scene();
     //draw_cylinder_scene();
-    draw_cone_scene();
+    //draw_cone_scene();
+    draw_hexagon();
 }
 
 pub fn draw_projectile() {
@@ -813,4 +815,20 @@ pub fn draw_cone_scene() {
     let canvas = camera.render(world);
 
     fs::write("cone_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn draw_hexagon() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
+
+    let mut hexagon = hexagon();
+    hexagon.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
+    world.objects.push(hexagon);
+
+    let mut camera = Camera::new(100, 100, PI / 6.);
+    camera.transform = view_transform(Tuple::point(0., 3., -3.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("hexagon.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

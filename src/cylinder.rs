@@ -1,4 +1,5 @@
 use super::EPSILON;
+use super::generate_object_id;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
@@ -8,7 +9,6 @@ use super::shape::Shape;
 use super::tuple::Tuple;
 use std::f64::INFINITY;
 use std::mem::swap;
-use std::sync::atomic::{AtomicI32, Ordering};
 
 #[derive(Debug, Clone)]
 pub struct Cylinder {
@@ -19,7 +19,7 @@ pub struct Cylinder {
     pub minimum: f64,
     pub maximum: f64,
     pub closed: bool,
-    pub parent: Box<Option<Shape>>,
+    pub parent: Option<i32>,
 }
 
 impl PartialEq for Cylinder {
@@ -27,23 +27,21 @@ impl PartialEq for Cylinder {
         self.id == other.id && self.transform == other.transform &&
             self.material == other.material && self.casts_shadow == other.casts_shadow &&
             near_eq(self.minimum, other.minimum) && near_eq(self.maximum, other.maximum) &&
-            self.closed == other.closed
+            self.closed == other.closed && self.parent == other.parent
     }
 }
 
 impl Cylinder {
     pub fn new() -> Self {
-        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
-
         Self {
-            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
+            id: generate_object_id(),
             transform: Matrix::identity(4),
             material: Default::default(),
             casts_shadow: true,
             minimum: -INFINITY,
             maximum: INFINITY,
             closed: false,
-            parent: Box::new(None),
+            parent: None,
         }
     }
 

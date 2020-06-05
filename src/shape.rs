@@ -1,10 +1,12 @@
 use super::cone::Cone;
 use super::cube::Cube;
 use super::cylinder::Cylinder;
+use super::generate_object_id;
 use super::group::Group;
 use super::intersection::Intersection;
 use super::material::Material;
 use super::matrix::Matrix;
+use super::PARENT_REFERENCES;
 use super::plane::Plane;
 use super::ray::Ray;
 use super::sphere::Sphere;
@@ -27,9 +29,10 @@ pub enum Shape {
     TestShape (TestShape),
 }
 
-pub trait Actionable {
+pub trait CommonShape {
     fn intersect(&self, ray: Ray) -> Vec<Intersection>;
     fn normal_at(&self, world_point: Tuple) -> Tuple;
+    fn get_id(&self) -> i32;
     fn get_transform(&self) -> Matrix;
     fn set_transform(&mut self, transform: Matrix);
     fn get_material(&self) -> Material;
@@ -42,14 +45,14 @@ pub trait Actionable {
     fn set_maximum(&mut self, maximum: f64);
     fn get_closed(&self) -> bool;
     fn set_closed(&mut self, closed: bool);
-    fn get_parent(&self) -> Option<Shape>;
-    fn set_parent(&mut self, parent: Shape);
+    fn get_parent(&self) -> Option<i32>;
+    fn set_parent(&mut self, parent: i32);
     fn add_child(&mut self, shape: &mut Shape);
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
 }
 
-impl Actionable for Shape {
+impl CommonShape for Shape {
     fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         let inverse = self.get_transform().inverse().unwrap();
         let local_ray = ray.transform(inverse);
@@ -73,11 +76,23 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.normal_at(local_point),
             Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
             Shape::Cone(cone) => cone.normal_at(local_point),
-            Shape::Group(_group) => panic!("Normal at cannot be calculated on a group."),
+            Shape::Group(group) => group.normal_at(local_point),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
         };
 
         self.normal_to_world(local_normal)
+    }
+
+    fn get_id(&self) -> i32 {
+        match self.clone() {
+            Shape::Sphere(sphere) => *sphere.get_id(),
+            Shape::Plane(plane) => *plane.get_id(),
+            Shape::Cube(cube) => *cube.get_id(),
+            Shape::Cylinder(cylinder) => *cylinder.get_id(),
+            Shape::Cone(cone) => *cone.get_id(),
+            Shape::Group(group) => *group.get_id(),
+            Shape::TestShape(test_shape) => *test_shape.get_id(),
+        }
     }
 
     fn get_transform(&self) -> Matrix {
@@ -99,20 +114,32 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.transform = transform,
             Shape::Cylinder(cylinder) => cylinder.transform = transform,
             Shape::Cone(cone) => cone.transform = transform,
-            Shape::Group(group) => group.transform = transform,
+            Shape::Group(group) => { 
+                group.transform = transform;
+
+                Group::update_group_reference(group.clone());
+            },
             Shape::TestShape(test_shape) => test_shape.transform = transform,
         }
     }
 
     fn get_material(&self) -> Material {
-        match self.clone() {
-            Shape::Sphere(sphere) => sphere.material,
-            Shape::Plane(plane) => plane.material,
-            Shape::Cube(cube) => cube.material,
-            Shape::Cylinder(cylinder) => cylinder.material,
-            Shape::Cone(cone) => cone.material,
-            Shape::Group(_group) => panic!("Material property does not exist for a group."),
-            Shape::TestShape(test_shape) => test_shape.material,
+        match self.get_parent() {
+            Some(parent) => {
+                let read_reference = PARENT_REFERENCES.read().unwrap();
+                read_reference.iter().find(|pr| pr.get_id() == parent).unwrap().get_material()
+            },
+            None => {
+                match self.clone() {
+                    Shape::Sphere(sphere) => sphere.material,
+                    Shape::Plane(plane) => plane.material,
+                    Shape::Cube(cube) => cube.material,
+                    Shape::Cylinder(cylinder) => cylinder.material,
+                    Shape::Cone(cone) => cone.material,
+                    Shape::Group(group) => group.material,
+                    Shape::TestShape(test_shape) => test_shape.material,
+                }
+            }
         }
     }
 
@@ -123,7 +150,11 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.material = material,
             Shape::Cylinder(cylinder) => cylinder.material = material,
             Shape::Cone(cone) => cone.material = material,
-            Shape::Group(_group) => panic!("Material property does not exist for a group."),
+            Shape::Group(group) => { 
+                group.material = material.clone();
+
+                Group::update_group_reference(group.clone());
+            },
             Shape::TestShape(test_shape) => test_shape.material = material,
         }
     }
@@ -135,7 +166,7 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow,
-            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
+            Shape::Group(group) => group.casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
     }
@@ -147,7 +178,11 @@ impl Actionable for Shape {
             Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow = casts_shadow,
-            Shape::Group(_group) => panic!("Cast shadow property does not exist for a group."),
+            Shape::Group(group) => { 
+                group.casts_shadow = casts_shadow;
+
+                Group::update_group_reference(group.clone());
+            },
             Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
         }
     }
@@ -199,42 +234,50 @@ impl Actionable for Shape {
         }
     }
     
-    fn get_parent(&self) -> Option<Shape> {
+    fn get_parent(&self) -> Option<i32> {
         match self.clone() {
-            Shape::Sphere(sphere) => *sphere.parent,
-            Shape::Plane(plane) => *plane.parent,
-            Shape::Cube(cube) => *cube.parent,
-            Shape::Cylinder(cylinder) => *cylinder.parent,
-            Shape::Cone(cone) => *cone.parent,
-            Shape::Group(group) => *group.parent,
-            Shape::TestShape(test_shape) => *test_shape.parent,
+            Shape::Sphere(sphere) => sphere.parent,
+            Shape::Plane(plane) => plane.parent,
+            Shape::Cube(cube) => cube.parent,
+            Shape::Cylinder(cylinder) => cylinder.parent,
+            Shape::Cone(cone) => cone.parent,
+            Shape::Group(group) => group.parent,
+            Shape::TestShape(test_shape) => test_shape.parent,
         }
     }
 
-    fn set_parent(&mut self, parent: Shape) {
+    fn set_parent(&mut self, parent: i32) {
         match self {
-            Shape::Sphere(sphere) => sphere.parent = Box::new(Some(parent)),
-            Shape::Plane(plane) => plane.parent = Box::new(Some(parent)),
-            Shape::Cube(cube) => cube.parent = Box::new(Some(parent)),
-            Shape::Cylinder(cylinder) => cylinder.parent = Box::new(Some(parent)),
-            Shape::Cone(cone) => cone.parent = Box::new(Some(parent)),
-            Shape::Group(group) => group.parent = Box::new(Some(parent)),
-            Shape::TestShape(test_shape) => test_shape.parent = Box::new(Some(parent)),
+            Shape::Sphere(sphere) => sphere.parent = Some(parent),
+            Shape::Plane(plane) => plane.parent = Some(parent),
+            Shape::Cube(cube) => cube.parent = Some(parent),
+            Shape::Cylinder(cylinder) => cylinder.parent = Some(parent),
+            Shape::Cone(cone) => cone.parent = Some(parent),
+            Shape::Group(group) => {
+                group.parent = Some(parent);
+
+                Group::update_group_reference(group.clone());
+            },
+            Shape::TestShape(test_shape) => test_shape.parent = Some(parent),
         }
     }
     
     fn add_child(&mut self, shape: &mut Shape) {
         match self {
             Shape::Group(group) => group.add_child(shape),
-            _ => panic!("Children can be added to groups only."),
+            _ => panic!("Only groups can contain children."),
         }
     }
 
     fn world_to_object(&self, point: Tuple) -> Tuple {
-        self.get_transform().inverse().unwrap() * if self.get_parent().is_some() {
-            self.get_parent().unwrap().world_to_object(point)
-        } else {
-            point
+        let parent = self.get_parent();
+        self.get_transform().inverse().unwrap() * match parent {
+            Some(parent) => {
+                let parent_references = PARENT_REFERENCES.read().unwrap();
+                let parent_shape = parent_references.iter().find(|pr| pr.get_id() == parent).unwrap();
+                parent_shape.world_to_object(point)
+            },
+            None => point,
         }
     }
 
@@ -243,10 +286,14 @@ impl Actionable for Shape {
         new_normal.w = 0.;
         new_normal = new_normal.normalize();
 
-        if self.get_parent().is_some() {
-            self.get_parent().unwrap().normal_to_world(new_normal)
-        } else {
-            new_normal
+        let parent = self.get_parent();
+        match parent {
+            Some(parent) => {
+                let parent_references = PARENT_REFERENCES.read().unwrap();
+                let parent_shape = parent_references.iter().find(|pr| pr.get_id() == parent).unwrap();
+                parent_shape.normal_to_world(new_normal)
+            },
+            None => new_normal,
         }
     }
 }
@@ -254,28 +301,35 @@ impl Actionable for Shape {
 /// For testing purposes only--not meant to be used directly.
 #[derive(Debug, Clone)]
 pub struct TestShape {
+    id: i32,
     pub transform: Matrix,
     pub material: Material,
     pub casts_shadow: bool,
-    pub parent: Box<Option<Shape>>,
+    pub parent: Option<i32>,
 }
 
 impl PartialEq for TestShape {
     fn eq(&self, other: &Self) -> bool {
-        self.transform == other.transform && self.material == other.material &&
-            self.casts_shadow == other.casts_shadow
+        self.id == other.id && self.transform == other.transform && 
+            self.material == other.material && self.casts_shadow == other.casts_shadow &&
+            self.parent == other.parent
     }
 }
 
 impl TestShape {
     pub fn new() -> Self {
         Self {
+            id: generate_object_id(),
             transform: Matrix::identity(4),
             material: Default::default(),
             casts_shadow: true,
-            parent: Box::new(None),
+            parent: None,
         }
     }    
+
+    pub fn get_id(&self) -> &i32 {
+        &self.id
+    }
 
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         unsafe {

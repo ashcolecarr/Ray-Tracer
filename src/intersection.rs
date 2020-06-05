@@ -2,7 +2,7 @@ use super::computations::Computations;
 use super::EPSILON;
 use super::near_eq;
 use super::ray::Ray;
-use super::shape::{Shape, Actionable};
+use super::shape::{Shape, CommonShape};
 
 #[derive(Debug, Clone)]
 pub struct Intersection {

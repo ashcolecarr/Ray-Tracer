@@ -1,38 +1,51 @@
+use super::generate_object_id;
 use super::intersection::Intersection;
+use super::material::Material;
 use super::matrix::Matrix;
+use super::PARENT_REFERENCES;
 use super::ray::Ray;
-use super::shape::{Shape, Actionable};
-use std::sync::atomic::{AtomicI32, Ordering};
+use super::shape::{Shape, CommonShape};
+use super::tuple::Tuple;
 
 #[derive(Debug, Clone)]
 pub struct Group {
     id: i32,
     pub transform: Matrix,
+    pub material: Material,
+    pub casts_shadow: bool,
     pub shapes: Vec<Shape>,
-    pub parent: Box<Option<Shape>>,
+    pub parent: Option<i32>,
 }
 
 impl PartialEq for Group {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.transform == other.transform 
+        self.id == other.id && self.transform == other.transform && 
+            self.material == other.material && self.casts_shadow == other.casts_shadow &&
+            self.parent == other.parent
     }
 }
 
 impl Group {
     pub fn new() -> Self {
-        static ID_COUNT: AtomicI32 = AtomicI32::new(1);
-
         Self {
-            id: ID_COUNT.fetch_add(1, Ordering::Relaxed),
+            id: generate_object_id(),
             transform: Matrix::identity(4),
+            material: Default::default(),
+            casts_shadow: true,
             shapes: vec![],
-            parent: Box::new(None),
+            parent: None,
         }
     }
 
+    pub fn get_id(&self) -> &i32 {
+        &self.id
+    }
+
     pub fn add_child(&mut self, shape: &mut Shape) {
-        shape.set_parent(Shape::Group(self.clone()));
+        shape.set_parent(self.id);
         self.shapes.push(shape.clone());
+
+        Group::update_group_reference(self.clone());
     }
 
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
@@ -44,6 +57,25 @@ impl Group {
         intersections.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
 
         intersections
+    }
+
+    pub fn normal_at(&self, _world_point: Tuple) -> Tuple {
+        panic!("Normal at cannot be calculated on a group.")
+    }
+
+    pub fn update_group_reference(group: Self) {
+        let read_reference = PARENT_REFERENCES.read().unwrap();
+        let index = read_reference.iter().position(|pr| pr.get_id() == *group.get_id()); 
+        drop(read_reference);
+
+        let mut write_reference = PARENT_REFERENCES.write().unwrap();
+        match index {
+            Some(i) => {
+                write_reference.remove(i);
+                write_reference.push(Shape::Group(group));
+            },
+            None => write_reference.push(Shape::Group(group)),
+        };
     }
 }
 
@@ -75,12 +107,14 @@ mod tests {
         let mut actual = Group::new();
         actual.add_child(&mut shape);
 
-        let expected = shape.clone();
-        let expected_shape = if let Shape::Group(group) = shape.get_parent().unwrap() { group } else { panic!("") };
+        let expected_shape = shape.clone();
+        let parent_references = PARENT_REFERENCES.read().unwrap();
+        let shape = parent_references.iter().find(|pr| pr.get_id() == shape.get_parent().unwrap()).unwrap();
+        let expected_parent = if let Shape::Group(group) = shape { group } else { panic!("") };
 
         assert!(!actual.shapes.is_empty());
-        assert_eq!(expected, actual.shapes[0]);
-        assert_eq!(expected_shape, actual);
+        assert_eq!(expected_shape, actual.shapes[0]);
+        assert_eq!(*expected_parent, actual);
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use super::color::Color;
 use super::matrix::Matrix;
-use super::shape::{Shape, Actionable};
+use super::shape::{Shape, CommonShape};
 use super::tuple::Tuple;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -182,7 +182,7 @@ mod tests {
     use super::*;
     use super::super::BLACK;
     use super::super::ORIGIN;
-    use super::super::shape::{Shape, Actionable};
+    use super::super::shape::{Shape, CommonShape};
     use super::super::sphere::Sphere;
     use super::super::transformation::*;
     use super::super::tuple::Tuple;
