@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::EPSILON;
 use super::generate_object_id;
 use super::intersection::Intersection;
@@ -132,6 +133,15 @@ impl Cone {
             Tuple::vector(world_point.x, if world_point.y > 0. { -y } else { y }, world_point.z)
         }
     }
+
+    pub fn bounds_of(&self) -> Bound {
+        let a = self.minimum.abs();
+        let b = self.maximum.abs();
+        let limit = f64::max(a, b);
+        
+        Bound::bounding_box_init(Tuple::point(-limit, self.minimum, -limit),
+            Tuple::point(limit, self.maximum, limit))
+    }
 }
 
 #[cfg(test)]
@@ -222,5 +232,41 @@ mod tests {
             
             assert_eq!(*expected, actual);
         }
+    }
+
+    #[test]
+    fn unbounded_cone_has_bounding_box() {
+        let shape = Cone::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-INFINITY, -INFINITY, -INFINITY);
+        let expected_maximum = Tuple::point(INFINITY, INFINITY, INFINITY);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum.x, actual_minimum.x);
+        assert_eq!(expected_minimum.y, actual_minimum.y);
+        assert_eq!(expected_minimum.z, actual_minimum.z);
+        assert_eq!(expected_maximum.x, actual_maximum.x);
+        assert_eq!(expected_maximum.y, actual_maximum.y);
+        assert_eq!(expected_maximum.z, actual_maximum.z);
+    }
+
+    #[test]
+    fn bounded_cylinder_has_bounding_box() {
+        let mut shape = Cone::new();
+        shape.minimum = -5.;
+        shape.maximum = 3.;
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-5., -5., -5.);
+        let expected_maximum = Tuple::point(5., 3., 5.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum, actual_minimum);
+        assert_eq!(expected_maximum, actual_maximum);
     }
 }

@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::generate_object_id;
 use super::intersection::Intersection;
 use super::material::Material;
@@ -74,6 +75,11 @@ impl Sphere {
         sphere.material = material;
 
         sphere
+    }
+
+    pub fn bounds_of(&self) -> Bound {
+        Bound::bounding_box_init(Tuple::point(-1., -1., -1.),
+            Tuple::point(1., 1., 1.))
     }
 }
 
@@ -257,5 +263,20 @@ mod tests {
         assert_eq!(expected_transform, actual.transform);
         assert_eq!(expected_transparency, actual.material.transparency);
         assert_eq!(expected_refractive_index, actual.material.refractive_index);
+    }
+
+    #[test]
+    fn sphere_has_bounding_box() {
+        let shape = Sphere::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-1., -1., -1.);
+        let expected_maximum = Tuple::point(1., 1., 1.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum, actual_minimum);
+        assert_eq!(expected_maximum, actual_maximum);
     }
 }

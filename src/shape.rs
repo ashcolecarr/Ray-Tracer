@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::cone::Cone;
 use super::cube::Cube;
 use super::cylinder::Cylinder;
@@ -50,6 +51,7 @@ pub trait CommonShape {
     fn add_child(&mut self, shape: &mut Shape);
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
+    fn bounds_of(&self) -> Bound;
 }
 
 impl CommonShape for Shape {
@@ -296,6 +298,20 @@ impl CommonShape for Shape {
             None => new_normal,
         }
     }
+
+    fn bounds_of(&self) -> Bound {
+        match self {
+            Shape::Sphere(sphere) => sphere.bounds_of(),
+            Shape::Plane(plane) => plane.bounds_of(),
+            Shape::Cube(cube) => cube.bounds_of(),
+            Shape::Cylinder(cylinder) => cylinder.bounds_of(),
+            Shape::Cone(cone) => cone.bounds_of(),
+            //Shape::Triangle(triangle) => triangle.bounds_of(),
+            //Shape::Group(group) => group.bounds_of(),
+            Shape::TestShape(test_shape) => test_shape.bounds_of(),
+            _ => Bound::bounding_box_empty(),
+        }
+    }
 }
 
 /// For testing purposes only--not meant to be used directly.
@@ -341,6 +357,11 @@ impl TestShape {
 
     pub fn normal_at(&self, world_point: Tuple) -> Tuple {
         Tuple::vector(world_point.x, world_point.y, world_point.z)
+    }
+
+    pub fn bounds_of(&self) -> Bound {
+        Bound::bounding_box_init(Tuple::point(-1., -1., -1.),
+            Tuple::point(1., 1., 1.))
     }
 }
 
@@ -542,5 +563,20 @@ mod tests {
         let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774));
 
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_shape_has_arbitrary_bounds() {
+        let shape = TestShape::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-1., -1., -1.);
+        let expected_maximum = Tuple::point(1., 1., 1.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum, actual_minimum);
+        assert_eq!(expected_maximum, actual_maximum);
     }
 }

@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::EPSILON;
 use super::generate_object_id;
 use super::intersection::Intersection;
@@ -123,6 +124,11 @@ impl Cylinder {
         } else {
             Tuple::vector(world_point.x, 0., world_point.z)
         }
+    }
+
+    pub fn bounds_of(&self) -> Bound {
+        Bound::bounding_box_init(Tuple::point(-1., self.minimum, -1.),
+            Tuple::point(1., self.maximum, 1.))
     }
 }
 
@@ -300,5 +306,45 @@ mod tests {
             
             assert_eq!(*expected, actual);
         }
+    }
+
+    #[test]
+    fn unbounded_cylinder_has_bounding_box() {
+        let shape = Cylinder::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-1., -INFINITY, -1.);
+        let expected_maximum = Tuple::point(1., INFINITY, 1.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert!(near_eq(expected_minimum.x, actual_minimum.x));
+        assert_eq!(expected_minimum.y, actual_minimum.y);
+        assert!(near_eq(expected_minimum.z, actual_minimum.z));
+        assert!(near_eq(expected_maximum.x, actual_maximum.x));
+        assert_eq!(expected_maximum.y, actual_maximum.y);
+        assert!(near_eq(expected_maximum.z, actual_maximum.z));
+    }
+
+    #[test]
+    fn bounded_cylinder_has_bounding_box() {
+        let mut shape = Cylinder::new();
+        shape.minimum = -5.;
+        shape.maximum = 3.;
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-1., -5., -1.);
+        let expected_maximum = Tuple::point(1., 3., 1.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert!(near_eq(expected_minimum.x, actual_minimum.x));
+        assert_eq!(expected_minimum.y, actual_minimum.y);
+        assert!(near_eq(expected_minimum.z, actual_minimum.z));
+        assert!(near_eq(expected_maximum.x, actual_maximum.x));
+        assert_eq!(expected_maximum.y, actual_maximum.y);
+        assert!(near_eq(expected_maximum.z, actual_maximum.z));
     }
 }

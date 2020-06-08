@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::EPSILON;
 use super::generate_object_id;
 use super::intersection::Intersection;
@@ -6,6 +7,7 @@ use super::matrix::Matrix;
 use super::ray::Ray;
 use super::shape::Shape;
 use super::tuple::Tuple;
+use std::f64::INFINITY;
 
 #[derive(Debug, Clone)]
 pub struct Plane {
@@ -52,15 +54,22 @@ impl Plane {
         // Every point on a plane has the same normal.
         Tuple::vector(0., 1., 0.)
     }
+
+    pub fn bounds_of(&self) -> Bound {
+        Bound::bounding_box_init(Tuple::point(-INFINITY, 0., -INFINITY),
+            Tuple::point(INFINITY, 0., INFINITY))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::near_eq;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
     use super::super::shape::Shape;
     use super::super::tuple::Tuple;
+    use std::f64::INFINITY;
 
     #[test]
     fn normal_of_plane_is_constant_everywhere() {
@@ -131,5 +140,24 @@ mod tests {
         assert_eq!(expected_count, actual.len());
         assert_eq!(expected_t, actual[0].t);
         assert_eq!(expected_object, actual_object);
+    }
+
+    #[test]
+    fn plane_has_bounding_box() {
+        let shape = Plane::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-INFINITY, 0., -INFINITY);
+        let expected_maximum = Tuple::point(INFINITY, 0., INFINITY);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum.x, actual_minimum.x);
+        assert!(near_eq(expected_minimum.y, actual_minimum.y));
+        assert_eq!(expected_minimum.z, actual_minimum.z);
+        assert_eq!(expected_maximum.x, actual_maximum.x);
+        assert!(near_eq(expected_maximum.y, actual_maximum.y));
+        assert_eq!(expected_maximum.z, actual_maximum.z);
     }
 }

@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::EPSILON;
 use super::generate_object_id;
 use super::intersection::Intersection;
@@ -89,6 +90,11 @@ impl Cube {
             Tuple::vector(0., 0., world_point.z)
         }
     }
+
+    pub fn bounds_of(&self) -> Bound {
+        Bound::bounding_box_init(Tuple::point(-1., -1., -1.),
+            Tuple::point(1., 1., 1.))
+    }
 }
 
 #[cfg(test)]
@@ -175,5 +181,20 @@ mod tests {
             
             assert_eq!(*expected, actual);
         }
+    }
+
+    #[test]
+    fn cube_has_bounding_box() {
+        let shape = Cube::new();
+        let bounding_box = shape.bounds_of();
+
+        let expected_minimum = Tuple::point(-1., -1., -1.);
+        let expected_maximum = Tuple::point(1., 1., 1.);
+
+        let actual_minimum = bounding_box.minimum;
+        let actual_maximum = bounding_box.maximum;
+
+        assert_eq!(expected_minimum, actual_minimum);
+        assert_eq!(expected_maximum, actual_maximum);
     }
 }
