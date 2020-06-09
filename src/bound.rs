@@ -1,4 +1,7 @@
+use super::EPSILON;
+use super::matrix::Matrix;
 use super::near_eq;
+use super::ray::Ray;
 use super::tuple::Tuple;
 use std::f64::INFINITY;
 
@@ -57,11 +60,68 @@ impl Bound {
     pub fn box_contains_box(&self, other: Self) -> bool {
         self.box_contains_point(other.minimum) && self.box_contains_point(other.maximum)
     }
+
+    pub fn transform(&self, matrix: Matrix) -> Self {
+        let points = vec![
+            self.minimum,
+            Tuple::point(self.minimum.x, self.minimum.y, self.maximum.z),
+            Tuple::point(self.minimum.x, self.maximum.y, self.minimum.z),
+            Tuple::point(self.minimum.x, self.maximum.y, self.maximum.z),
+            Tuple::point(self.maximum.x, self.minimum.y, self.minimum.z),
+            Tuple::point(self.maximum.x, self.minimum.y, self.maximum.z),
+            Tuple::point(self.maximum.x, self.maximum.y, self.minimum.z),
+            self.maximum
+        ];
+
+        let mut new_box = Self::bounding_box_empty();
+
+        for point in points {
+            new_box.add_point(matrix.clone() * point);
+        }
+
+        new_box
+    }
+
+    pub fn intersects(&self, ray: Ray) -> bool {
+        let (xtmin, xtmax) = Bound::check_axis(ray.origin.x, ray.direction.x, self.minimum.x, self.maximum.x);
+        let (ytmin, ytmax) = Bound::check_axis(ray.origin.y, ray.direction.y, self.minimum.y, self.maximum.y);
+        let (ztmin, ztmax) = Bound::check_axis(ray.origin.z, ray.direction.z, self.minimum.z, self.maximum.z);
+
+        let tmin = vec![xtmin, ytmin, ztmin].iter().fold(0./0., |max, &n| f64::max(max, n));
+        let tmax = vec![xtmax, ytmax, ztmax].iter().fold(0./0., |min, &n| f64::min(min, n));
+
+        if tmin > tmax {
+            return false;
+        }
+
+        true
+    }
+
+    fn check_axis(origin: f64, direction: f64, minimum: f64, maximum: f64) -> (f64, f64) {
+        let tmin_numerator = minimum - origin;
+        let tmax_numerator = maximum - origin;
+
+        let (tmin, tmax) = if direction.abs() >= EPSILON {
+            (tmin_numerator / direction, tmax_numerator / direction)
+        } else {
+            (tmin_numerator * INFINITY, tmax_numerator * INFINITY)
+        };
+
+        if tmin > tmax {
+            // Swap the values.
+            (tmax, tmin)
+        } else {
+            (tmin, tmax)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::ray::Ray;
+    use super::super::transformation::*;
+    use std::f64::consts::PI;
     use std::f64::INFINITY;
 
     #[test]
@@ -97,15 +157,15 @@ mod tests {
     fn adding_points_to_empty_bounding_box() {
         let point1 = Tuple::point(-5., 2., 0.);
         let point2 = Tuple::point(7., 0., -3.);
-        let mut bounding_box = Bound::bounding_box_empty();
-        bounding_box.add_point(point1);
-        bounding_box.add_point(point2);
+        let mut box1 = Bound::bounding_box_empty();
+        box1.add_point(point1);
+        box1.add_point(point2);
 
         let expected_minimum = Tuple::point(-5., 0., -3.);
         let expected_maximum = Tuple::point(7., 2., 0.);
 
-        let actual_minimum = bounding_box.minimum;
-        let actual_maximum = bounding_box.maximum;
+        let actual_minimum = box1.minimum;
+        let actual_maximum = box1.maximum;
 
         assert_eq!(expected_minimum, actual_minimum);
         assert_eq!(expected_maximum, actual_maximum);
@@ -131,7 +191,7 @@ mod tests {
 
     #[test]
     fn checking_to_see_if_box_contains_given_point() {
-        let bounding_box = Bound::bounding_box_init(Tuple::point(5., -2., 0.), 
+        let box1 = Bound::bounding_box_init(Tuple::point(5., -2., 0.), 
             Tuple::point(11., 4., 7.));
         let points = vec![Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.),
             Tuple::point(8., 1., 3.), Tuple::point(3., 0., 3.),
@@ -144,7 +204,7 @@ mod tests {
         
         for source in expecteds.iter().zip(points) {
             let (expected, point) = source;
-            let actual = bounding_box.box_contains_point(point);
+            let actual = box1.box_contains_point(point);
 
             assert_eq!(*expected, actual);
         }
@@ -155,9 +215,9 @@ mod tests {
         let box1 = Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.));
         let boxes = vec![
             Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.)),
-            Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.)),
-            Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.)),
-            Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.)),
+            Bound::bounding_box_init(Tuple::point(6., -1., 1.), Tuple::point(10., 3., 6.)),
+            Bound::bounding_box_init(Tuple::point(4., -3., -1.), Tuple::point(10., 3., 6.)),
+            Bound::bounding_box_init(Tuple::point(6., -1., 1.), Tuple::point(12., 5., 8.)),
         ];
 
         let expecteds = vec![true, true, false, false];
@@ -165,6 +225,87 @@ mod tests {
         for source in expecteds.iter().zip(boxes) {
             let (expected, box2) = source;
             let actual = box1.box_contains_box(box2);
+
+            assert_eq!(*expected, actual);
+        }
+    }
+
+    #[test]
+    fn transforming_bounding_box() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -1., -1.), 
+            Tuple::point(1., 1., 1.));
+        let matrix = rotate(PI / 4., Axis::X) * rotate(PI / 4., Axis::Y);
+
+        let expected_minimum = Tuple::point(-1.41421, -1.7071, -1.7071);
+        let expected_maximum = Tuple::point(1.41421, 1.7071, 1.7071);
+
+        let actual = box1.transform(matrix);
+
+        assert_eq!(expected_minimum, actual.minimum);
+        assert_eq!(expected_maximum, actual.maximum);
+    }
+
+    #[test]
+    fn intersecting_ray_with_bounding_box_at_origin() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -1., -1.), Tuple::point(1., 1., 1.));
+        let origins = vec![Tuple::point(5., 0.5, 0.), Tuple::point(-5., 0.5, 0.), 
+            Tuple::point(0.5, 5., 0.), Tuple::point(0.5, -5., 0.), 
+            Tuple::point(0.5, 0., 5.), Tuple::point(0.5, 0., -5.), 
+            Tuple::point(0., 0.5, 0.), Tuple::point(-2., 0., 0.), 
+            Tuple::point(0., -2., 0.), Tuple::point(0., 0., -2.), 
+            Tuple::point(2., 0., 2.), Tuple::point(0., 2., 2.), 
+            Tuple::point(2., 2., 0.)];
+        let directions = vec![Tuple::vector(-1., 0., 0.), Tuple::vector(1., 0., 0.), 
+            Tuple::vector(0., -1., 0.), Tuple::vector(0., 1., 0.), 
+            Tuple::vector(0., 0., -1.), Tuple::vector(0., 0., 1.), 
+            Tuple::vector(0., 0., 1.), Tuple::vector(2., 4., 6.), 
+            Tuple::vector(6., 2., 4.), Tuple::vector(4., 6., 2.), 
+            Tuple::vector(0., 0., -1.), Tuple::vector(0., -1., 0.), 
+            Tuple::vector(-1., 0., 0.)];
+        
+        let expecteds = vec![true, true, true, true, true, true, true, 
+            false, false, false, false, false, false];
+
+        for source in expecteds.iter().zip(origins).zip(directions) {
+            let ((expected, origin), direction) = source;
+
+            let direction = direction.normalize();
+            let ray = Ray::new(origin, direction);
+
+            let actual = box1.intersects(ray);
+
+            assert_eq!(*expected, actual);
+        }
+    }
+
+    #[test]
+    fn intersecting_ray_with_noncubic_bounding_box() {
+        let box1 = Bound::bounding_box_init(Tuple::point(5., -2., 0.), Tuple::point(11., 4., 7.));
+        let origins = vec![Tuple::point(1.5, 1., 2.), Tuple::point(-5., -1., 4.), 
+            Tuple::point(7., 6., 5.), Tuple::point(9., -5., 6.), 
+            Tuple::point(8., 2., 1.2), Tuple::point(6., 0., -5.), 
+            Tuple::point(8., 1., 3.5), Tuple::point(9., -1., -8.), 
+            Tuple::point(8., 3., -4.), Tuple::point(9., -1., -2.), 
+            Tuple::point(4., 0., 9.),  Tuple::point(8., 6., -1.), 
+            Tuple::point(1.2, 5., 4.)];
+        let directions = vec![Tuple::vector(-1., 0., 0.), Tuple::vector(1., 0., 0.), 
+            Tuple::vector(0., -1., 0.), Tuple::vector(0., 1., 0.), 
+            Tuple::vector(0., 0., -1.), Tuple::vector(0., 0., 1.), 
+            Tuple::vector(0., 0., 1.), Tuple::vector(2., 4., 6.), 
+            Tuple::vector(6., 2., 4.), Tuple::vector(4., 6., 2.), 
+            Tuple::vector(0., 0., -1.), Tuple::vector(0., -1., 0.),
+            Tuple::vector(-1., 0., 0.)];
+        
+        let expecteds = vec![true, true, true, true, true, true, true, 
+            false, false, false, false, false, false];
+
+        for source in expecteds.iter().zip(origins).zip(directions) {
+            let ((expected, origin), direction) = source;
+
+            let direction = direction.normalize();
+            let ray = Ray::new(origin, direction);
+
+            let actual = box1.intersects(ray);
 
             assert_eq!(*expected, actual);
         }

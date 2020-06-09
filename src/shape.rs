@@ -52,6 +52,7 @@ pub trait CommonShape {
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
     fn bounds_of(&self) -> Bound;
+    fn parent_space_bounds_of(&self) -> Bound;
 }
 
 impl CommonShape for Shape {
@@ -307,10 +308,13 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.bounds_of(),
             Shape::Cone(cone) => cone.bounds_of(),
             //Shape::Triangle(triangle) => triangle.bounds_of(),
-            //Shape::Group(group) => group.bounds_of(),
+            Shape::Group(group) => group.bounds_of(),
             Shape::TestShape(test_shape) => test_shape.bounds_of(),
-            _ => Bound::bounding_box_empty(),
         }
+    }
+
+    fn parent_space_bounds_of(&self) -> Bound {
+        self.bounds_of().transform(self.get_transform())
     }
 }
 
@@ -578,5 +582,19 @@ mod tests {
 
         assert_eq!(expected_minimum, actual_minimum);
         assert_eq!(expected_maximum, actual_maximum);
+    }
+
+    #[test]
+    fn querying_shapes_bounding_box_in_its_parents_space() {
+        let mut shape = Shape::Sphere(Sphere::new());
+        shape.set_transform(translate(1., -3., 5.) * scale(0.5, 2., 4.));
+
+        let expected_minimum = Tuple::point(0.5, -5., 1.);
+        let expected_maximum = Tuple::point(1.5, -1., 9.);
+
+        let actual = shape.parent_space_bounds_of();
+
+        assert_eq!(expected_minimum, actual.minimum);
+        assert_eq!(expected_maximum, actual.maximum);
     }
 }

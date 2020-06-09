@@ -1,3 +1,4 @@
+use super::bound::Bound;
 use super::generate_object_id;
 use super::intersection::Intersection;
 use super::material::Material;
@@ -77,11 +78,23 @@ impl Group {
             None => write_reference.push(Shape::Group(group)),
         };
     }
+
+    pub fn bounds_of(&self) -> Bound {
+        let mut group_box = Bound::bounding_box_empty();
+
+        for shape in &self.shapes {
+            let shape_box = shape.parent_space_bounds_of();
+            group_box.add_box(shape_box);
+        }
+
+        group_box
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::cylinder::Cylinder;
     use super::super::matrix::Matrix;
     use super::super::ORIGIN;
     use super::super::ray::Ray;
@@ -167,5 +180,26 @@ mod tests {
         let actual = group.intersect(ray);
 
         assert_eq!(expected_count, actual.len());
+    }
+
+    #[test]
+    fn group_has_bounding_box_that_contains_its_children() {
+        let mut sphere = Shape::Sphere(Sphere::new());
+        sphere.set_transform(translate(2., 5., -3.) * scale(2., 2., 2.));
+        let mut cylinder = Shape::Cylinder(Cylinder::new());
+        cylinder.set_minimum(-2.);
+        cylinder.set_maximum(2.);
+        cylinder.set_transform(translate(-4., -1., 4.) * scale(0.5, 1., 0.5));
+        let mut shape = Shape::Group(Group::new());
+        shape.add_child(&mut sphere);
+        shape.add_child(&mut cylinder);
+
+        let expected_minimum = Tuple::point(-4.5, -3., -5.);
+        let expected_maximum = Tuple::point(4., 7., 4.5);
+
+        let actual = shape.bounds_of();
+
+        assert_eq!(expected_minimum, actual.minimum);
+        assert_eq!(expected_maximum, actual.maximum);
     }
 }
