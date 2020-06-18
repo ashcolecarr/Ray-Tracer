@@ -11,6 +11,7 @@ use super::PARENT_REFERENCES;
 use super::plane::Plane;
 use super::ray::Ray;
 use super::sphere::Sphere;
+use super::triangle::Triangle;
 use super::tuple::Tuple;
 
 // For testing only.
@@ -26,6 +27,7 @@ pub enum Shape {
     Cube (Cube),
     Cylinder (Cylinder),
     Cone (Cone),
+    Triangle (Triangle),
     Group (Group),
     TestShape (TestShape),
 }
@@ -70,6 +72,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.intersect(local_ray),
             Shape::Cylinder(cylinder) => cylinder.intersect(local_ray),
             Shape::Cone(cone) => cone.intersect(local_ray),
+            Shape::Triangle(triangle) => triangle.intersect(local_ray),
             Shape::Group(group) => group.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
@@ -83,6 +86,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.normal_at(local_point),
             Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
             Shape::Cone(cone) => cone.normal_at(local_point),
+            Shape::Triangle(triangle) => triangle.normal_at(local_point),
             Shape::Group(group) => group.normal_at(local_point),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
         };
@@ -97,6 +101,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => *cube.get_id(),
             Shape::Cylinder(cylinder) => *cylinder.get_id(),
             Shape::Cone(cone) => *cone.get_id(),
+            Shape::Triangle(triangle) => *triangle.get_id(),
             Shape::Group(group) => *group.get_id(),
             Shape::TestShape(test_shape) => *test_shape.get_id(),
         }
@@ -109,6 +114,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.transform,
             Shape::Cylinder(cylinder) => cylinder.transform,
             Shape::Cone(cone) => cone.transform,
+            Shape::Triangle(triangle) => triangle.transform,
             Shape::Group(group) => group.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
@@ -121,6 +127,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.transform = transform,
             Shape::Cylinder(cylinder) => cylinder.transform = transform,
             Shape::Cone(cone) => cone.transform = transform,
+            Shape::Triangle(triangle) => triangle.transform = transform,
             Shape::Group(group) => { 
                 group.transform = transform;
 
@@ -143,6 +150,7 @@ impl CommonShape for Shape {
                     Shape::Cube(cube) => cube.material,
                     Shape::Cylinder(cylinder) => cylinder.material,
                     Shape::Cone(cone) => cone.material,
+                    Shape::Triangle(triangle) => triangle.material,
                     Shape::Group(group) => group.material,
                     Shape::TestShape(test_shape) => test_shape.material,
                 }
@@ -157,6 +165,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.material = material,
             Shape::Cylinder(cylinder) => cylinder.material = material,
             Shape::Cone(cone) => cone.material = material,
+            Shape::Triangle(triangle) => triangle.material = material,
             Shape::Group(group) => { 
                 group.material = material.clone();
 
@@ -173,6 +182,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow,
+            Shape::Triangle(triangle) => triangle.casts_shadow,
             Shape::Group(group) => group.casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
@@ -185,6 +195,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.casts_shadow = casts_shadow,
             Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow = casts_shadow,
+            Shape::Triangle(triangle) => triangle.casts_shadow = casts_shadow,
             Shape::Group(group) => { 
                 group.casts_shadow = casts_shadow;
 
@@ -248,6 +259,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.parent,
             Shape::Cylinder(cylinder) => cylinder.parent,
             Shape::Cone(cone) => cone.parent,
+            Shape::Triangle(triangle) => triangle.parent,
             Shape::Group(group) => group.parent,
             Shape::TestShape(test_shape) => test_shape.parent,
         }
@@ -260,6 +272,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.parent = Some(parent),
             Shape::Cylinder(cylinder) => cylinder.parent = Some(parent),
             Shape::Cone(cone) => cone.parent = Some(parent),
+            Shape::Triangle(triangle) => triangle.parent = Some(parent),
             Shape::Group(group) => {
                 group.parent = Some(parent);
 
@@ -318,7 +331,7 @@ impl CommonShape for Shape {
             Shape::Cube(cube) => cube.bounds_of(),
             Shape::Cylinder(cylinder) => cylinder.bounds_of(),
             Shape::Cone(cone) => cone.bounds_of(),
-            //Shape::Triangle(triangle) => triangle.bounds_of(),
+            Shape::Triangle(triangle) => triangle.bounds_of(),
             Shape::Group(group) => group.bounds_of(),
             Shape::TestShape(test_shape) => test_shape.bounds_of(),
         }

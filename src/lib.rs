@@ -17,6 +17,7 @@ pub mod ray;
 pub mod shape;
 pub mod sphere;
 pub mod transformation;
+pub mod triangle;
 pub mod tuple;
 pub mod world;
 
