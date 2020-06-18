@@ -114,6 +114,36 @@ impl Bound {
             (tmin, tmax)
         }
     }
+
+    pub fn split_bounds(&self) -> (Self, Self) {
+        let dx = (self.maximum.x - self.minimum.x).abs();
+        let dy = (self.maximum.y - self.minimum.y).abs();
+        let dz = (self.maximum.z - self.minimum.z).abs();
+        
+        let greatest = vec![dx, dy, dz].iter().fold(0./0., |max, &n| f64::max(max, n));
+
+        let (mut x0, mut y0, mut z0) = (self.minimum.x, self.minimum.y, self.minimum.z);
+        let (mut x1, mut y1, mut z1) = (self.maximum.x, self.maximum.y, self.maximum.z);
+
+        if near_eq(greatest, dx) {
+            x0 = x0 + dx / 2.;
+            x1 = x0;
+        } else if near_eq(greatest, dy) {
+            y0 = y0 + dy / 2.;
+            y1 = y0;
+        } else {
+            z0 = z0 + dz / 2.;
+            z1 = z0;
+        }
+
+        let mid_min = Tuple::point(x0, y0, z0);
+        let mid_max = Tuple::point(x1, y1, z1);
+        
+        let left = Bound::bounding_box_init(self.minimum, mid_max);
+        let right = Bound::bounding_box_init(mid_min, self.maximum);
+
+        (left, right)
+    }
 }
 
 #[cfg(test)]
@@ -309,5 +339,64 @@ mod tests {
 
             assert_eq!(*expected, actual);
         }
+    }
+
+    #[test]
+    fn splitting_perfect_cube() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -4., -5.), Tuple::point(9., 6., 5.));
+
+        let expected_left = Bound::bounding_box_init(Tuple::point(-1., -4., -5.), Tuple::point(4., 6., 5.));
+        let expected_right = Bound::bounding_box_init(Tuple::point(4., -4., -5.), Tuple::point(9., 6., 5.));
+
+        let (actual_left, actual_right) = box1.split_bounds();
+
+        assert_eq!(expected_left.minimum, actual_left.minimum);
+        assert_eq!(expected_left.maximum, actual_left.maximum);
+        assert_eq!(expected_right.minimum, actual_right.minimum);
+        assert_eq!(expected_right.maximum, actual_right.maximum);
+    }
+
+    #[test]
+    fn splitting_xwide_box() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(9., 5.5, 3.));
+
+        let expected_left = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(4., 5.5, 3.));
+        let expected_right = Bound::bounding_box_init(Tuple::point(4., -2., -3.), Tuple::point(9., 5.5, 3.));
+
+        let (actual_left, actual_right) = box1.split_bounds();
+
+        assert_eq!(expected_left.minimum, actual_left.minimum);
+        assert_eq!(expected_left.maximum, actual_left.maximum);
+        assert_eq!(expected_right.minimum, actual_right.minimum);
+        assert_eq!(expected_right.maximum, actual_right.maximum);
+    }
+
+    #[test]
+    fn splitting_ywide_box() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(5., 8., 3.));
+
+        let expected_left = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(5., 3., 3.));
+        let expected_right = Bound::bounding_box_init(Tuple::point(-1., 3., -3.), Tuple::point(5., 8., 3.));
+
+        let (actual_left, actual_right) = box1.split_bounds();
+
+        assert_eq!(expected_left.minimum, actual_left.minimum);
+        assert_eq!(expected_left.maximum, actual_left.maximum);
+        assert_eq!(expected_right.minimum, actual_right.minimum);
+        assert_eq!(expected_right.maximum, actual_right.maximum);
+    }
+    #[test]
+    fn splitting_zwide_box() {
+        let box1 = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(5., 3., 7.));
+
+        let expected_left = Bound::bounding_box_init(Tuple::point(-1., -2., -3.), Tuple::point(5., 3., 2.));
+        let expected_right = Bound::bounding_box_init(Tuple::point(-1., -2., 2.), Tuple::point(5., 3., 7.));
+
+        let (actual_left, actual_right) = box1.split_bounds();
+
+        assert_eq!(expected_left.minimum, actual_left.minimum);
+        assert_eq!(expected_left.maximum, actual_left.maximum);
+        assert_eq!(expected_right.minimum, actual_right.minimum);
+        assert_eq!(expected_right.maximum, actual_right.maximum);
     }
 }

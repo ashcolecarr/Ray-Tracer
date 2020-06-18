@@ -14,7 +14,7 @@ use super::sphere::Sphere;
 use super::tuple::Tuple;
 
 // For testing only.
-static mut SAVED_RAY: Ray = Ray {
+pub static mut SAVED_RAY: Ray = Ray {
     origin: Tuple { x: 0., y: 0., z: 0., w: 0. },
     direction: Tuple { x: 0., y: 0., z: 0., w: 0. },
 };
@@ -48,11 +48,15 @@ pub trait CommonShape {
     fn set_closed(&mut self, closed: bool);
     fn get_parent(&self) -> Option<i32>;
     fn set_parent(&mut self, parent: i32);
+    fn get_shapes(&self) -> &Vec<Shape>;
     fn add_child(&mut self, shape: &mut Shape);
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
     fn bounds_of(&self) -> Bound;
     fn parent_space_bounds_of(&self) -> Bound;
+    fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>);
+    fn make_subgroup(&mut self, shapes: Vec<Shape>);
+    fn divide(&mut self, threshold: usize);
 }
 
 impl CommonShape for Shape {
@@ -264,6 +268,13 @@ impl CommonShape for Shape {
             Shape::TestShape(test_shape) => test_shape.parent = Some(parent),
         }
     }
+
+    fn get_shapes(&self) -> &Vec<Shape> {
+        match self {
+            Shape::Group(group) => &group.shapes,
+            _ => panic!("Only groups can contain children."),
+        }
+    }
     
     fn add_child(&mut self, shape: &mut Shape) {
         match self {
@@ -315,6 +326,27 @@ impl CommonShape for Shape {
 
     fn parent_space_bounds_of(&self) -> Bound {
         self.bounds_of().transform(self.get_transform())
+    }
+
+    fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>) {
+        match self {
+            Shape::Group(group) => group.partition_children(),
+            _ => panic!("Only groups can partition children."),
+        }
+    }
+    
+    fn make_subgroup(&mut self, shapes: Vec<Shape>) {
+        match self {
+            Shape::Group(group) => group.make_subgroup(shapes),
+            _ => panic!("Only groups can contain subgroups."),
+        }
+    }
+
+    fn divide(&mut self, threshold: usize) {
+        match self {
+            Shape::Group(group) => group.divide(threshold),
+            _ => (), // Dividing any primitive shape does nothing.
+        }
     }
 }
 
@@ -596,5 +628,14 @@ mod tests {
 
         assert_eq!(expected_minimum, actual.minimum);
         assert_eq!(expected_maximum, actual.maximum);
+    }
+
+    #[test]
+    fn subdividing_primitive_does_nothing() {
+        let mut actual = Shape::Sphere(Sphere::new());
+
+        actual.divide(1);
+
+        assert!(if let Shape::Sphere(_sphere) = actual { true } else { false });
     }
 }

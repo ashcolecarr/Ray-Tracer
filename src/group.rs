@@ -50,14 +50,18 @@ impl Group {
     }
 
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
-        let mut intersections: Vec<Intersection> = self.shapes.iter().fold(Vec::new(), |mut ints, o| {
-            ints.append(&mut o.intersect(ray));
-            ints
-        }); 
+        if self.bounds_of().intersects(ray) {
+            let mut intersections: Vec<Intersection> = self.shapes.iter().fold(Vec::new(), |mut ints, o| {
+                ints.append(&mut o.intersect(ray));
+                ints
+            }); 
 
-        intersections.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+            intersections.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+    
+            return intersections;
+        }
 
-        intersections
+        vec![]
     }
 
     pub fn normal_at(&self, _world_point: Tuple) -> Tuple {
@@ -88,6 +92,60 @@ impl Group {
         }
 
         group_box
+    }
+    
+    pub fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>) {
+        let (left_box, right_box) = self.bounds_of().split_bounds();
+        let mut left: Vec<Shape> = vec![];
+        let mut right: Vec<Shape> = vec![];
+
+        self.shapes.retain(|shape| {
+            let remove = {
+                if left_box.box_contains_box(shape.parent_space_bounds_of()) {
+                    left.push(shape.clone());
+
+                    true
+                } else if right_box.box_contains_box(shape.parent_space_bounds_of()) {
+                    right.push(shape.clone());
+
+                    true
+                } else {
+                    false
+                }
+            };
+
+            !remove
+        });
+
+        Group::update_group_reference(self.clone());
+
+        (left, right)
+    }
+
+    pub fn make_subgroup(&mut self, shapes: Vec<Shape>) {
+        let mut subgroup = Shape::Group(Group::new());
+        for mut shape in shapes {
+            subgroup.add_child(&mut shape);
+        }
+
+        self.add_child(&mut subgroup);
+    }
+
+    pub fn divide(&mut self, threshold: usize) {
+        if threshold <= self.shapes.len() {
+            let (left, right) = self.partition_children();
+            if !left.is_empty() {
+                self.make_subgroup(left);
+            }
+
+            if !right.is_empty() {
+                self.make_subgroup(right);
+            }
+        }
+
+        for child in &mut self.shapes {
+            child.divide(threshold);
+        }
     }
 }
 
@@ -201,5 +259,154 @@ mod tests {
 
         assert_eq!(expected_minimum, actual.minimum);
         assert_eq!(expected_maximum, actual.maximum);
+    }
+
+    #[test]
+    fn intersecting_ray_group_does_not_test_children_if_box_is_missed() {
+        let mut child = Shape::TestShape(TestShape::new());
+        let mut shape = Shape::Group(Group::new());
+        shape.add_child(&mut child);
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 1., 0.));
+
+        let expected = unsafe {
+            SAVED_RAY
+        };
+
+        let _intersection = shape.intersect(ray);
+
+        let actual = unsafe {
+            SAVED_RAY
+        };
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn intersecting_ray_group_tests_children_if_box_is_hit() {
+        let mut child = Shape::TestShape(TestShape::new());
+        let mut shape = Shape::Group(Group::new());
+        shape.add_child(&mut child);
+        let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+
+        let expected = ray;
+
+        let _intersection = shape.intersect(ray);
+
+        let actual = unsafe {
+            SAVED_RAY
+        };
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn partitioning_groups_children() {
+        let mut sphere1 = Shape::Sphere(Sphere::new());
+        sphere1.set_transform(translate(-2., 0., 0.));
+        let mut sphere2 = Shape::Sphere(Sphere::new());
+        sphere2.set_transform(translate(2., 0., 0.));
+        let mut sphere3 = Shape::Sphere(Sphere::new());
+        let mut group = Shape::Group(Group::new());
+        group.add_child(&mut sphere1);
+        group.add_child(&mut sphere2);
+        group.add_child(&mut sphere3);
+
+        let expected_left = vec![sphere1.clone()];
+        let expected_right = vec![sphere2.clone()];
+        let expected_group = vec![sphere3.clone()];
+        let expected_count = 1;
+
+        let (actual_left, actual_right) = group.partition_children();
+        let actual_group = if let Shape::Group(group) = group { group } else { panic!("") };
+
+        assert_eq!(expected_group[0], actual_group.shapes[0]);
+        assert_eq!(expected_count, actual_group.shapes.len());
+        assert_eq!(expected_left[0], actual_left[0]);
+        assert_eq!(expected_right[0], actual_right[0]);
+    }
+
+    #[test]
+    fn creating_sub_group_from_list_of_children() {
+        let sphere1 = Shape::Sphere(Sphere::new());
+        let sphere2 = Shape::Sphere(Sphere::new());
+        let mut group = Shape::Group(Group::new());
+
+        let expected_group = vec![sphere1.clone(), sphere2.clone()];
+
+        group.make_subgroup(vec![sphere1, sphere2]);
+
+        let actual_group = if let Shape::Group(group) = group { group } else { panic!("") };
+
+        assert_eq!(expected_group[0].get_id(), actual_group.shapes[0].get_shapes()[0].get_id());
+        assert_eq!(expected_group[1].get_id(), actual_group.shapes[0].get_shapes()[1].get_id());
+    }
+
+    #[test]
+    fn subdividing_groups_partitions_its_children() {
+        let mut sphere1 = Shape::Sphere(Sphere::new());
+        sphere1.set_transform(translate(-2., -2., 0.));
+        let mut sphere2 = Shape::Sphere(Sphere::new());
+        sphere2.set_transform(translate(-2., 2., 0.));
+        let mut sphere3 = Shape::Sphere(Sphere::new());
+        sphere3.set_transform(scale(4., 4., 4.));
+        let mut group = Shape::Group(Group::new());
+        group.add_child(&mut sphere1);
+        group.add_child(&mut sphere2);
+        group.add_child(&mut sphere3);
+
+        let expected_group = vec![sphere3.clone()];
+        let expected_subgroup_count = 2;
+        let expected_subgroup1 = vec![sphere1.clone()];
+        let expected_subgroup2 = vec![sphere2.clone()];
+
+        group.divide(1);
+
+        let actual_group = group.clone();
+
+        assert_eq!(expected_group[0].get_id(), actual_group.get_shapes()[0].get_id());
+        assert_eq!(expected_group[0].get_transform(), actual_group.get_shapes()[0].get_transform());
+        assert_eq!(expected_subgroup_count, actual_group.get_shapes()[1].get_shapes().len());
+        assert_eq!(expected_subgroup1[0].get_id(), actual_group.get_shapes()[1].get_shapes()[0].get_shapes()[0].get_id());
+        assert_eq!(expected_subgroup1[0].get_transform(), actual_group.get_shapes()[1].get_shapes()[0].get_shapes()[0].get_transform());
+        assert_eq!(expected_subgroup2[0].get_id(), actual_group.get_shapes()[1].get_shapes()[1].get_shapes()[0].get_id());
+        assert_eq!(expected_subgroup2[0].get_transform(), actual_group.get_shapes()[1].get_shapes()[1].get_shapes()[0].get_transform());
+    }
+
+    #[test]
+    fn subdividing_group_with_too_few_children() {
+        let mut sphere1 = Shape::Sphere(Sphere::new());
+        sphere1.set_transform(translate(-2., 0., 0.));
+        let mut sphere2 = Shape::Sphere(Sphere::new());
+        sphere2.set_transform(translate(2., 1., 0.));
+        let mut sphere3 = Shape::Sphere(Sphere::new());
+        sphere3.set_transform(translate(2., -1., 0.));
+        let mut subgroup = Shape::Group(Group::new());
+        subgroup.add_child(&mut sphere1);
+        subgroup.add_child(&mut sphere2);
+        subgroup.add_child(&mut sphere3);
+        let mut sphere4 = Shape::Sphere(Sphere::new());
+        let mut group = Shape::Group(Group::new());
+        group.add_child(&mut subgroup);
+        group.add_child(&mut sphere4);
+
+        let expected_subgroup = subgroup.clone();
+        let expected_sphere4 = sphere4.clone();
+        let expected_subgroup_count = 2;
+        let expected_subgroup1 = vec![sphere1.clone()];
+        let expected_subgroup2 = vec![sphere2.clone(), sphere3.clone()];
+
+        group.divide(3);
+
+        let actual_group = group.clone();
+
+        assert_eq!(expected_subgroup.get_id(), actual_group.get_shapes()[0].get_id());
+        assert_eq!(expected_sphere4.get_id(), actual_group.get_shapes()[1].get_id());
+        assert_eq!(expected_subgroup_count, actual_group.get_shapes()[0].get_shapes().len());
+        assert_eq!(expected_subgroup1[0].get_id(), actual_group.get_shapes()[0].get_shapes()[0].get_shapes()[0].get_id());
+        assert_eq!(expected_subgroup1[0].get_transform(), actual_group.get_shapes()[0].get_shapes()[0].get_shapes()[0].get_transform());
+        assert_eq!(expected_subgroup2[0].get_id(), actual_group.get_shapes()[0].get_shapes()[1].get_shapes()[0].get_id());
+        assert_eq!(expected_subgroup2[0].get_transform(), actual_group.get_shapes()[0].get_shapes()[1].get_shapes()[0].get_transform());
+        assert_eq!(expected_subgroup2[1].get_id(), actual_group.get_shapes()[0].get_shapes()[1].get_shapes()[1].get_id());
+        assert_eq!(expected_subgroup2[1].get_transform(), actual_group.get_shapes()[0].get_shapes()[1].get_shapes()[1].get_transform());
     }
 }
