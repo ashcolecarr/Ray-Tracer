@@ -48,6 +48,8 @@ pub trait CommonShape {
     fn set_maximum(&mut self, maximum: f64);
     fn get_closed(&self) -> bool;
     fn set_closed(&mut self, closed: bool);
+    fn get_points(&self) -> (Tuple, Tuple, Tuple);
+    fn set_points(&mut self, points: (Tuple, Tuple, Tuple));
     fn get_parent(&self) -> Option<i32>;
     fn set_parent(&mut self, parent: i32);
     fn get_shapes(&self) -> &Vec<Shape>;
@@ -249,6 +251,26 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.closed = closed,
             Shape::Cone(cone) => cone.closed = closed,
             _ => panic!("Closed property is not available for this shape."),
+        }
+    }
+
+    fn get_points(&self) -> (Tuple, Tuple, Tuple) {
+        match self {
+            Shape::Triangle(triangle) => {
+                (triangle.point1, triangle.point2, triangle.point3)
+            },
+            _ => panic!("Points are available only for triangles."),
+        }
+    }
+
+    fn set_points(&mut self, points: (Tuple, Tuple, Tuple)) {
+        match self {
+            Shape::Triangle(triangle) => {
+                triangle.point1 = points.0;
+                triangle.point2 = points.1;
+                triangle.point3 = points.2;
+            },
+            _ => panic!("Points are available only for triangles."),
         }
     }
     

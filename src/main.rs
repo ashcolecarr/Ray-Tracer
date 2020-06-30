@@ -11,7 +11,9 @@ use ray_tracer::intersection::Intersection;
 use ray_tracer::light::Light;
 use ray_tracer::material::Material;
 use ray_tracer::near_eq;
+use ray_tracer::obj_file::obj_to_group;
 use ray_tracer::ORIGIN;
+use ray_tracer::obj_file::parse_obj_file;
 use ray_tracer::pattern::*;
 use ray_tracer::plane::Plane;
 use ray_tracer::Projectile;
@@ -41,7 +43,8 @@ fn main() {
     //draw_table_scene();
     //draw_cylinder_scene();
     //draw_cone_scene();
-    draw_hexagon();
+    //draw_hexagon();
+    render_teapot();
 }
 
 pub fn draw_projectile() {
@@ -831,4 +834,25 @@ pub fn draw_hexagon() {
     let canvas = camera.render(world);
 
     fs::write("hexagon.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn render_teapot() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
+
+    let file = "teapot.obj";
+    let file_data =  fs::read_to_string(file);
+    let parser = parse_obj_file(file_data.unwrap());
+
+    let mut teapot = obj_to_group(parser);
+    teapot.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
+    teapot.divide(1);
+    world.objects.push(teapot);
+
+    let mut camera = Camera::new(100, 100, PI / 6.);
+    camera.transform = view_transform(Tuple::point(0., 3., -3.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("teapot.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
