@@ -25,6 +25,7 @@ pub mod world;
 use color::Color;
 use cylinder::Cylinder;
 use group::Group;
+use matrix::Matrix;
 use shape::{Shape, CommonShape};
 use sphere::Sphere;
 use transformation::*;
@@ -45,6 +46,11 @@ lazy_static! {
     static ref PARENT_REFERENCES: RwLock<Vec<Shape>> = RwLock::new(Vec::new());
 }
 
+static MATRIX_ID: AtomicI32 = AtomicI32::new(1);
+lazy_static! {
+    static ref CACHED_INVERSES: RwLock<Vec<Matrix>> = RwLock::new(Vec::new());
+}
+
 pub fn near_eq(a: f64, b: f64) -> bool {
     if f64::abs(a - b) < EPSILON {
         true
@@ -55,6 +61,10 @@ pub fn near_eq(a: f64, b: f64) -> bool {
 
 pub fn generate_object_id() -> i32 {
     ID_COUNT.fetch_add(1, Ordering::Relaxed)
+}
+
+pub fn generate_matrix_id() -> i32 {
+    MATRIX_ID.fetch_add(1, Ordering::Relaxed)
 }
 
 #[derive(Copy, Clone)]

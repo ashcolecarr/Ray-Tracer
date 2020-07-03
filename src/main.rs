@@ -38,13 +38,13 @@ fn main() {
     //draw_room_scene();
     //draw_pattern();
     //draw_reflective_scene();
-    //draw_glass_ball();
+    draw_glass_ball();
     //draw_reflection_refraction();
     //draw_table_scene();
     //draw_cylinder_scene();
     //draw_cone_scene();
     //draw_hexagon();
-    render_teapot();
+    //render_teapot();
 }
 
 pub fn draw_projectile() {
@@ -399,41 +399,33 @@ pub fn draw_reflective_scene() {
 }
 
 pub fn draw_glass_ball() {
-    let plane_pattern = Pattern::Checkered(CheckeredPattern::new(WHITE, BLACK));
-    let mut plane_material: Material = Default::default();
-    plane_material.pattern = Some(plane_pattern);
+    let mut plane_pattern = Pattern::Checkered(CheckeredPattern::new(WHITE, BLACK));
+    plane_pattern.set_transform(translate(0., 0.1, 0.));
+    let plane_material = Material::new().with_pattern(plane_pattern);
     let mut plane = Shape::Plane(Plane::new());
     plane.set_material(plane_material);
+    plane.set_transform(translate(0., -10.1, 0.));
 
-    let mut glass: Material = Default::default();
-    glass.transparency = 1.;
-    glass.refractive_index = 1.5;
-    glass.ambient = 0.5;
-    glass.diffuse = 0.1;
-    glass.specular = 1.;
-    glass.shininess = 300.;
-    glass.color = Color::new(0.1, 0., 0.);
-    let mut glass_sphere = Shape::Sphere(Sphere::glass_sphere());
-    glass_sphere.set_material(glass);
-    glass_sphere.set_transform(translate(0., 2., 0.) * scale(1.5, 1.5, 1.5));
-    glass_sphere.set_casts_shadow(false);
+    let glass = Material::new().with_diffuse(0.1).with_shininess(300.)
+        .with_reflective(1.).with_refractive_index(1.52).with_transparency(1.);
+    let mut glass_ball = Shape::Sphere(Sphere::glass_sphere());
+    glass_ball.set_material(glass);
+    glass_ball.set_casts_shadow(false);
 
-    let mut air_material: Material = Default::default();
-    air_material.transparency = 1.;
-    air_material.diffuse = 0.1;
-    air_material.color = Color::new(0.1, 0.1, 0.1);
+    let air = Material::new().with_diffuse(0.1).with_shininess(300.)
+        .with_reflective(1.).with_refractive_index(1.).with_transparency(1.);
     let mut air_bubble = Shape::Sphere(Sphere::new());
-    air_bubble.set_material(air_material);
-    air_bubble.set_transform(translate(0., 2., 0.) * scale(1., 1., 1.));
+    air_bubble.set_material(air);
+    air_bubble.set_transform(scale(0.5, 0.5, 0.5));
 
     let mut world = World::new();
-    world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), Color::new(0.5, 0.5, 0.5)));
+    world.lights.push(Light::point_light(Tuple::point(20., 10., 0.), Color::new(0.7, 0.7, 0.7)));
     world.objects.push(plane);
-    world.objects.push(glass_sphere);
-    //world.objects.push(air_bubble);
+    world.objects.push(glass_ball);
+    world.objects.push(air_bubble);
     
-    let mut camera = Camera::new(100, 100, PI / 2.);
-    camera.transform = view_transform(Tuple::point(0., 5., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+    let mut camera = Camera::new(400, 400, PI / 3.);
+    camera.transform = view_transform(Tuple::point(0., 2.5, 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
     
     let canvas = camera.render(world);
 

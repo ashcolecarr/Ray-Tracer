@@ -1,3 +1,5 @@
+use super::CACHED_INVERSES;
+use super::generate_matrix_id;
 use super::near_eq;
 use super::tuple::Tuple;
 use std::ops::Index;
@@ -6,6 +8,7 @@ use std::ops::Mul;
 
 #[derive(Debug, Clone)]
 pub struct Matrix {
+    id: i32,
     rows: usize,
     columns: usize,
     values: Vec<f64>,
@@ -31,7 +34,11 @@ impl PartialEq for Matrix {
 
 impl Matrix {
     pub fn new(rows: usize, columns: usize, values: Vec<f64>) -> Self {
-        Matrix { rows, columns, values }
+        Matrix { id: generate_matrix_id(), rows, columns, values }
+    }
+
+    pub fn new_inverse(id: i32, rows: usize, columns: usize, values: Vec<f64>) -> Self {
+        Matrix { id, rows, columns, values }
     }
     
     pub fn get_rows(&self) -> &usize {
@@ -115,12 +122,20 @@ impl Matrix {
     }
 
     pub fn inverse(&self) -> Option<Self> {
+        let read_reference = CACHED_INVERSES.read().unwrap();
+        let index = read_reference.iter().position(|ci| ci.id == self.id);
+
+        match index {
+            Some(i) => return Some(read_reference[i].clone()),
+            None => (),
+        };
+        
         let determinant = self.determinant();
         if near_eq(determinant, 0.) {
             return None;
         }
 
-        let mut inverse = Matrix::new(self.rows, self.columns, 
+        let mut inverse = Matrix::new_inverse(self.id, self.rows, self.columns, 
             vec![0.0; self.rows * self.columns]);
         
         for row in 0..self.rows {
@@ -130,6 +145,10 @@ impl Matrix {
                 inverse[column][row] = cofactor / determinant;
             }
         }
+
+        drop(read_reference);
+        let mut write_reference = CACHED_INVERSES.write().unwrap();
+        write_reference.push(inverse.clone());
 
         Some(inverse)
     }
