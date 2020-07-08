@@ -4,6 +4,7 @@ use super::shape::{Shape, CommonShape};
 use super::triangle::Triangle;
 use super::tuple::Tuple;
 
+#[derive(Debug)]
 pub struct Parser {
     pub vertices: Vec<Tuple>,
     pub groups: Vec<Shape>,
@@ -27,7 +28,7 @@ pub fn parse_obj_file(data: String) -> Parser {
     let mut vertices = vec![ORIGIN];
     let mut groups = vec![Shape::Group(Group::new())];
     'outer: for line in lines {
-        let record: Vec<&str> = line.split(' ').collect();
+        let record: Vec<&str> = line.split_whitespace().collect();
         if record.is_empty() {
             lines_ignored += 1;
             continue;

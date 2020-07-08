@@ -64,7 +64,7 @@ impl Group {
         vec![]
     }
 
-    pub fn normal_at(&self, _world_point: Tuple) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, _hit: Intersection) -> Tuple {
         panic!("Normal at cannot be calculated on a group.")
     }
 

@@ -38,13 +38,13 @@ fn main() {
     //draw_room_scene();
     //draw_pattern();
     //draw_reflective_scene();
-    draw_glass_ball();
+    //draw_glass_ball();
     //draw_reflection_refraction();
     //draw_table_scene();
     //draw_cylinder_scene();
     //draw_cone_scene();
     //draw_hexagon();
-    //render_teapot();
+    render_teapot();
 }
 
 pub fn draw_projectile() {
@@ -125,10 +125,10 @@ pub fn draw_circle() {
             let ray = Ray::new(ray_origin, (position - ray_origin).normalize());
             let intersections = shape.intersect(ray);
 
-            let hit = Intersection::hit(intersections);
+            let hit = Intersection::hit(intersections.clone());
             if hit.is_some() {
                 let point = ray.position(hit.clone().unwrap().t);
-                let normal = hit.clone().unwrap().object.normal_at(point);
+                let normal = hit.clone().unwrap().object.normal_at(point, intersections[0].clone());
                 let eye = -ray.direction;
 
                 let material = hit.unwrap().object.get_material();
@@ -832,16 +832,18 @@ pub fn render_teapot() {
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
 
-    let file = "teapot.obj";
+    let file = "test.obj";
     let file_data =  fs::read_to_string(file);
     let parser = parse_obj_file(file_data.unwrap());
+    //println!("Parser: {:?}", parser);
 
     let mut teapot = obj_to_group(parser);
     teapot.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
-    teapot.divide(1);
+    //println!("Teapot: {:?}", teapot);
+    //teapot.divide(1);
     world.objects.push(teapot);
 
-    let mut camera = Camera::new(100, 100, PI / 6.);
+    let mut camera = Camera::new(400, 400, PI / 3.);
     camera.transform = view_transform(Tuple::point(0., 3., -3.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
     
     let canvas = camera.render(world);

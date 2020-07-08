@@ -8,6 +8,8 @@ use super::shape::{Shape, CommonShape};
 pub struct Intersection {
     pub t: f64,
     pub object: Shape,
+    pub u: Option<f64>,
+    pub v: Option<f64>,
 }
 
 impl PartialEq for Intersection {
@@ -18,7 +20,11 @@ impl PartialEq for Intersection {
 
 impl Intersection {
     pub fn new(t: f64, object: Shape) -> Self {
-        Self { t, object }
+        Self { t, object, u: None, v: None, }
+    }
+
+    pub fn intersection_with_uv(t: f64, object: Shape, u: f64, v: f64) -> Self {
+        Self { t, object, u: Some(u), v: Some(v), }
     }
 
     pub fn hit(intersections: Vec<Self>) -> Option<Self> {
@@ -31,7 +37,7 @@ impl Intersection {
 
     pub fn prepare_computations(&self, ray: Ray, intersections: Vec<Intersection>) -> Computations {
         let point = ray.position(self.t);
-        let mut normal_vector = self.object.normal_at(point);
+        let mut normal_vector = self.object.normal_at(point, intersections[0].clone());
         let eye_vector = -ray.direction;
 
         let inside = if normal_vector.dot(eye_vector) < 0. {
@@ -136,6 +142,7 @@ mod tests {
     use super::super::shape::Shape;
     use super::super::sphere::Sphere;
     use super::super::transformation::*;
+    use super::super::triangle::Triangle;
     use super::super::tuple::Tuple;
 
     #[test]
@@ -228,7 +235,7 @@ mod tests {
     fn precomputing_state_of_intersection() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let shape = Shape::Sphere(Sphere::new());
-        let intersection = Intersection { t: 4., object: shape.clone() };
+        let intersection = Intersection { t: 4., object: shape.clone(), u: None, v: None, };
 
         let expected = Computations {
             t: 4.,
@@ -253,7 +260,7 @@ mod tests {
     fn hit_when_intersection_occurs_on_outside() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let shape = Shape::Sphere(Sphere::new());
-        let intersection = Intersection { t: 4., object: shape.clone() };
+        let intersection = Intersection { t: 4., object: shape.clone(), u: None, v: None, };
 
         let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
 
@@ -264,7 +271,7 @@ mod tests {
     fn hit_when_intersection_occurs_on_inside() {
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let shape = Shape::Sphere(Sphere::new());
-        let intersection = Intersection { t: 1., object: shape.clone() };
+        let intersection = Intersection { t: 1., object: shape.clone(), u: None, v: None, };
 
         let expected = Computations {
             t: 1.,
@@ -400,5 +407,25 @@ mod tests {
         let actual = Intersection::schlick(computations);
 
         assert!(near_eq(expected, actual)); 
+    }
+
+    #[test]
+    fn intersection_can_encapsulate_u_and_v() {
+        let triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 1., 0.), 
+            Tuple::point(-1., 0., 0.), Tuple::point(1., 0., 0.)));
+        
+        let expected_u = 0.2;
+        let expected_v = 0.4;
+
+        let actual = Intersection::intersection_with_uv(3.5, triangle, 0.2, 0.4);
+
+        match actual.u {
+            Some(u) => assert_eq!(expected_u, u),
+            None => assert!(false),
+        };
+        match actual.v {
+            Some(v) => assert_eq!(expected_v, v),
+            None => assert!(false),
+        };
     }
 }

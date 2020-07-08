@@ -110,7 +110,7 @@ impl Cylinder {
         result < 1. || near_eq(result, 1.)
     }
 
-    pub fn normal_at(&self, world_point: Tuple) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
         let distance = world_point.x.powi(2) + world_point.z.powi(2);
 
         if distance < 1. && (world_point.y > self.maximum - EPSILON ||
@@ -182,6 +182,7 @@ mod tests {
     #[test]
     fn normal_vector_on_cylinder() {
         let cylinder = Cylinder::new();
+        let intersection = Intersection::new(1., Shape::Cylinder(cylinder.clone()));
 
         let points = vec![
             Tuple::point(1., 0., 0.), 
@@ -199,7 +200,7 @@ mod tests {
 
         for source in expecteds.iter().zip(points) {
             let (expected, point) = source;
-            let actual = cylinder.normal_at(point);
+            let actual = cylinder.normal_at(point, intersection.clone());
             
             assert_eq!(*expected, actual);
         }
@@ -281,6 +282,7 @@ mod tests {
         cylinder.minimum = 1.;
         cylinder.maximum = 2.;
         cylinder.closed = true;
+        let intersection = Intersection::new(1., Shape::Cylinder(cylinder.clone()));
 
         let points = vec![
             Tuple::point(0., 1., 0.), 
@@ -302,7 +304,7 @@ mod tests {
 
         for source in expecteds.iter().zip(points) {
             let (expected, point) = source;
-            let actual = cylinder.normal_at(point);
+            let actual = cylinder.normal_at(point, intersection.clone());
             
             assert_eq!(*expected, actual);
         }

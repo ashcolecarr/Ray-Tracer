@@ -16,6 +16,7 @@ pub mod pattern;
 pub mod plane;
 pub mod ray;
 pub mod shape;
+pub mod smooth_triangle;
 pub mod sphere;
 pub mod transformation;
 pub mod triangle;

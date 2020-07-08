@@ -50,7 +50,7 @@ impl Plane {
         }
     }
 
-    pub fn normal_at(&self, _world_point: Tuple) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, _hit: Intersection) -> Tuple {
         // Every point on a plane has the same normal.
         Tuple::vector(0., 1., 0.)
     }
@@ -74,14 +74,15 @@ mod tests {
     #[test]
     fn normal_of_plane_is_constant_everywhere() {
         let plane = Plane::new();
+        let intersection = Intersection::new(1., Shape::Plane(plane.clone()));
 
         let expected1 = Tuple::vector(0., 1., 0.);
         let expected2 = Tuple::vector(0., 1., 0.);
         let expected3 = Tuple::vector(0., 1., 0.);
 
-        let actual1 = plane.normal_at(ORIGIN);
-        let actual2 = plane.normal_at(Tuple::point(10., 0., -10.));
-        let actual3 = plane.normal_at(Tuple::point(-5., 0., 150.));
+        let actual1 = plane.normal_at(ORIGIN, intersection.clone());
+        let actual2 = plane.normal_at(Tuple::point(10., 0., -10.), intersection.clone());
+        let actual3 = plane.normal_at(Tuple::point(-5., 0., 150.), intersection.clone());
 
         assert_eq!(expected1, actual1);
         assert_eq!(expected2, actual2);

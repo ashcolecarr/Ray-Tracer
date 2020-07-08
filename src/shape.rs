@@ -10,6 +10,7 @@ use super::matrix::Matrix;
 use super::PARENT_REFERENCES;
 use super::plane::Plane;
 use super::ray::Ray;
+use super::smooth_triangle::SmoothTriangle;
 use super::sphere::Sphere;
 use super::triangle::Triangle;
 use super::tuple::Tuple;
@@ -28,13 +29,14 @@ pub enum Shape {
     Cylinder (Cylinder),
     Cone (Cone),
     Triangle (Triangle),
+    SmoothTriangle (SmoothTriangle),
     Group (Group),
     TestShape (TestShape),
 }
 
 pub trait CommonShape {
     fn intersect(&self, ray: Ray) -> Vec<Intersection>;
-    fn normal_at(&self, world_point: Tuple) -> Tuple;
+    fn normal_at(&self, world_point: Tuple, hit: Intersection) -> Tuple;
     fn get_id(&self) -> i32;
     fn get_transform(&self) -> Matrix;
     fn set_transform(&mut self, transform: Matrix);
@@ -75,22 +77,24 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.intersect(local_ray),
             Shape::Cone(cone) => cone.intersect(local_ray),
             Shape::Triangle(triangle) => triangle.intersect(local_ray),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.intersect(local_ray),
             Shape::Group(group) => group.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
     }
     
-    fn normal_at(&self, world_point: Tuple) -> Tuple {
+    fn normal_at(&self, world_point: Tuple, hit: Intersection) -> Tuple {
         let local_point = self.world_to_object(world_point);
         let local_normal = match self {
-            Shape::Sphere(sphere) => sphere.normal_at(local_point),
-            Shape::Plane(plane) => plane.normal_at(local_point),
-            Shape::Cube(cube) => cube.normal_at(local_point),
-            Shape::Cylinder(cylinder) => cylinder.normal_at(local_point),
-            Shape::Cone(cone) => cone.normal_at(local_point),
-            Shape::Triangle(triangle) => triangle.normal_at(local_point),
-            Shape::Group(group) => group.normal_at(local_point),
-            Shape::TestShape(test_shape) => test_shape.normal_at(local_point),
+            Shape::Sphere(sphere) => sphere.normal_at(local_point, hit),
+            Shape::Plane(plane) => plane.normal_at(local_point, hit),
+            Shape::Cube(cube) => cube.normal_at(local_point, hit),
+            Shape::Cylinder(cylinder) => cylinder.normal_at(local_point, hit),
+            Shape::Cone(cone) => cone.normal_at(local_point, hit),
+            Shape::Triangle(triangle) => triangle.normal_at(local_point, hit),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.normal_at(local_point, hit),
+            Shape::Group(group) => group.normal_at(local_point, hit),
+            Shape::TestShape(test_shape) => test_shape.normal_at(local_point, hit),
         };
 
         self.normal_to_world(local_normal)
@@ -104,6 +108,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => *cylinder.get_id(),
             Shape::Cone(cone) => *cone.get_id(),
             Shape::Triangle(triangle) => *triangle.get_id(),
+            Shape::SmoothTriangle(smooth_triangle) => *smooth_triangle.get_id(),
             Shape::Group(group) => *group.get_id(),
             Shape::TestShape(test_shape) => *test_shape.get_id(),
         }
@@ -117,6 +122,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.transform,
             Shape::Cone(cone) => cone.transform,
             Shape::Triangle(triangle) => triangle.transform,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform,
             Shape::Group(group) => group.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
@@ -130,6 +136,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.transform = transform,
             Shape::Cone(cone) => cone.transform = transform,
             Shape::Triangle(triangle) => triangle.transform = transform,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform = transform,
             Shape::Group(group) => { 
                 group.transform = transform;
 
@@ -153,6 +160,7 @@ impl CommonShape for Shape {
                     Shape::Cylinder(cylinder) => cylinder.material,
                     Shape::Cone(cone) => cone.material,
                     Shape::Triangle(triangle) => triangle.material,
+                    Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.material,
                     Shape::Group(group) => group.material,
                     Shape::TestShape(test_shape) => test_shape.material,
                 }
@@ -168,6 +176,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.material = material,
             Shape::Cone(cone) => cone.material = material,
             Shape::Triangle(triangle) => triangle.material = material,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.material = material,
             Shape::Group(group) => { 
                 group.material = material.clone();
 
@@ -185,6 +194,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow,
             Shape::Triangle(triangle) => triangle.casts_shadow,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.casts_shadow,
             Shape::Group(group) => group.casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
@@ -198,6 +208,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.casts_shadow = casts_shadow,
             Shape::Cone(cone) => cone.casts_shadow = casts_shadow,
             Shape::Triangle(triangle) => triangle.casts_shadow = casts_shadow,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.casts_shadow = casts_shadow,
             Shape::Group(group) => { 
                 group.casts_shadow = casts_shadow;
 
@@ -270,6 +281,11 @@ impl CommonShape for Shape {
                 triangle.point2 = points.1;
                 triangle.point3 = points.2;
             },
+            Shape::SmoothTriangle(smooth_triangle) => {
+                smooth_triangle.point1 = points.0;
+                smooth_triangle.point2 = points.1;
+                smooth_triangle.point3 = points.2;
+            },
             _ => panic!("Points are available only for triangles."),
         }
     }
@@ -282,6 +298,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.parent,
             Shape::Cone(cone) => cone.parent,
             Shape::Triangle(triangle) => triangle.parent,
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.parent,
             Shape::Group(group) => group.parent,
             Shape::TestShape(test_shape) => test_shape.parent,
         }
@@ -295,6 +312,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.parent = Some(parent),
             Shape::Cone(cone) => cone.parent = Some(parent),
             Shape::Triangle(triangle) => triangle.parent = Some(parent),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.parent = Some(parent),
             Shape::Group(group) => {
                 group.parent = Some(parent);
 
@@ -354,6 +372,7 @@ impl CommonShape for Shape {
             Shape::Cylinder(cylinder) => cylinder.bounds_of(),
             Shape::Cone(cone) => cone.bounds_of(),
             Shape::Triangle(triangle) => triangle.bounds_of(),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.bounds_of(),
             Shape::Group(group) => group.bounds_of(),
             Shape::TestShape(test_shape) => test_shape.bounds_of(),
         }
@@ -426,7 +445,7 @@ impl TestShape {
         vec![]
     }
 
-    pub fn normal_at(&self, world_point: Tuple) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
         Tuple::vector(world_point.x, world_point.y, world_point.z)
     }
 
@@ -531,10 +550,11 @@ mod tests {
     fn computing_normal_on_translated_shape() {
         let mut shape = Shape::TestShape(TestShape::new());
         shape.set_transform(translate(0., 1., 0.));
+        let intersection = Intersection::new(1., shape.clone());
 
         let expected = Tuple::vector(0., 0.70711, -0.70711);
 
-        let actual = shape.normal_at(Tuple::point(0., 1.70711, -0.70711));
+        let actual = shape.normal_at(Tuple::point(0., 1.70711, -0.70711), intersection);
 
         assert_eq!(expected, actual);
     }
@@ -544,10 +564,11 @@ mod tests {
         let mut shape = Shape::TestShape(TestShape::new());
         let transform = scale(1., 0.5, 1.) * rotate(PI / 5., Axis::Z);
         shape.set_transform(transform);
+        let intersection = Intersection::new(1., shape.clone());
 
         let expected = Tuple::vector(0., 0.97014, -0.24254);
 
-        let actual = shape.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.));
+        let actual = shape.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.), intersection);
 
         assert_eq!(expected, actual);
     }
@@ -627,11 +648,12 @@ mod tests {
         group1.add_child(&mut group2);
         let mut shape = Shape::Sphere(Sphere::new());
         shape.set_transform(translate(5., 0., 0.));
+        let intersection = Intersection::new(1., shape.clone());
         group2.add_child(&mut shape);
 
         let expected = Tuple::vector(0.2857, 0.42854, -0.85716);
 
-        let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774));
+        let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774), intersection);
 
         assert_eq!(expected, actual);
     }
