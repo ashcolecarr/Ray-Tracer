@@ -44,7 +44,8 @@ fn main() {
     //draw_cylinder_scene();
     //draw_cone_scene();
     //draw_hexagon();
-    render_teapot();
+    //render_teapot();
+    render_test_cube();
 }
 
 pub fn draw_projectile() {
@@ -832,21 +833,41 @@ pub fn render_teapot() {
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
 
-    let file = "test.obj";
+    let file = "teapot-low.obj";
     let file_data =  fs::read_to_string(file);
     let parser = parse_obj_file(file_data.unwrap());
-    //println!("Parser: {:?}", parser);
 
-    let mut teapot = obj_to_group(parser);
-    teapot.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
-    //println!("Teapot: {:?}", teapot);
+    let teapot = obj_to_group(parser);
+    //teapot.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
     //teapot.divide(1);
     world.objects.push(teapot);
 
-    let mut camera = Camera::new(400, 400, PI / 3.);
+    let mut camera = Camera::new(50, 50, PI / 3.);
     camera.transform = view_transform(Tuple::point(0., 3., -3.), Tuple::point(0., 0.3, 0.), Tuple::vector(0., 1., 0.));
     
     let canvas = camera.render(world);
 
     fs::write("teapot.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn render_test_cube() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
+
+    let file = "test.obj";
+    let file_data =  fs::read_to_string(file);
+    let parser = parse_obj_file(file_data.unwrap());
+
+    let test_cube = obj_to_group(parser);
+    let mut sphere = Shape::Sphere(Sphere::new());
+    sphere.set_transform(translate(0., 2., 0.) * scale(0.5, 0.5, 0.5));
+    world.objects.push(test_cube);
+    world.objects.push(sphere);
+
+    let mut camera = Camera::new(400, 400, PI / 4.);
+    camera.transform = view_transform(Tuple::point(0., 3., -3.), Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("test_cube.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }

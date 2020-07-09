@@ -52,6 +52,8 @@ pub trait CommonShape {
     fn set_closed(&mut self, closed: bool);
     fn get_points(&self) -> (Tuple, Tuple, Tuple);
     fn set_points(&mut self, points: (Tuple, Tuple, Tuple));
+    fn get_normal_vectors(&self) -> (Tuple, Tuple, Tuple);
+    fn set_normal_vectors(&mut self, points: (Tuple, Tuple, Tuple));
     fn get_parent(&self) -> Option<i32>;
     fn set_parent(&mut self, parent: i32);
     fn get_shapes(&self) -> &Vec<Shape>;
@@ -270,6 +272,9 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => {
                 (triangle.point1, triangle.point2, triangle.point3)
             },
+            Shape::SmoothTriangle(smooth_triangle) => {
+                (smooth_triangle.point1, smooth_triangle.point2, smooth_triangle.point3)
+            },
             _ => panic!("Points are available only for triangles."),
         }
     }
@@ -287,6 +292,26 @@ impl CommonShape for Shape {
                 smooth_triangle.point3 = points.2;
             },
             _ => panic!("Points are available only for triangles."),
+        }
+    }
+
+    fn get_normal_vectors(&self) -> (Tuple, Tuple, Tuple) {
+        match self {
+            Shape::SmoothTriangle(smooth_triangle) => {
+                (smooth_triangle.normal_vector1, smooth_triangle.normal_vector2, smooth_triangle.normal_vector3)
+            },
+            _ => panic!("Normal vectors are available only for smooth triangles."),
+        }
+    }
+
+    fn set_normal_vectors(&mut self, normal_vectors: (Tuple, Tuple, Tuple)) {
+        match self {
+            Shape::SmoothTriangle(smooth_triangle) => {
+                smooth_triangle.normal_vector1 = normal_vectors.0;
+                smooth_triangle.normal_vector2 = normal_vectors.1;
+                smooth_triangle.normal_vector3 = normal_vectors.2;
+            },
+            _ => panic!("Normal vectors are available only for smooth triangles."),
         }
     }
     
