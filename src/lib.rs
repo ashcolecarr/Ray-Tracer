@@ -4,6 +4,7 @@ pub mod canvas;
 pub mod color;
 pub mod computations;
 pub mod cone;
+pub mod csg;
 pub mod cube;
 pub mod cylinder;
 pub mod group;

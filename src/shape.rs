@@ -1,5 +1,6 @@
 use super::bound::Bound;
 use super::cone::Cone;
+use super::csg::CSG;
 use super::cube::Cube;
 use super::cylinder::Cylinder;
 use super::generate_object_id;
@@ -31,6 +32,7 @@ pub enum Shape {
     Triangle (Triangle),
     SmoothTriangle (SmoothTriangle),
     Group (Group),
+    CSG (CSG),
     TestShape (TestShape),
 }
 
@@ -60,6 +62,7 @@ pub trait CommonShape {
     fn add_child(&mut self, shape: &mut Shape);
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
+    fn includes(&self, other: Shape) -> bool;
     fn bounds_of(&self) -> Bound;
     fn parent_space_bounds_of(&self) -> Bound;
     fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>);
@@ -81,6 +84,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.intersect(local_ray),
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.intersect(local_ray),
             Shape::Group(group) => group.intersect(local_ray),
+            Shape::CSG(csg) => csg.intersect(local_ray),
             Shape::TestShape(test_shape) => test_shape.intersect(local_ray),
         }
     }
@@ -96,6 +100,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.normal_at(local_point, hit),
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.normal_at(local_point, hit),
             Shape::Group(group) => group.normal_at(local_point, hit),
+            Shape::CSG(csg) => csg.normal_at(local_point, hit),
             Shape::TestShape(test_shape) => test_shape.normal_at(local_point, hit),
         };
 
@@ -112,6 +117,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => *triangle.get_id(),
             Shape::SmoothTriangle(smooth_triangle) => *smooth_triangle.get_id(),
             Shape::Group(group) => *group.get_id(),
+            Shape::CSG(csg) => *csg.get_id(),
             Shape::TestShape(test_shape) => *test_shape.get_id(),
         }
     }
@@ -126,6 +132,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.transform,
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform,
             Shape::Group(group) => group.transform,
+            Shape::CSG(csg) => csg.transform,
             Shape::TestShape(test_shape) => test_shape.transform,
         }
     }
@@ -143,6 +150,11 @@ impl CommonShape for Shape {
                 group.transform = transform;
 
                 Group::update_group_reference(group.clone());
+            },
+            Shape::CSG(csg) => { 
+                csg.transform = transform;
+
+                CSG::update_csg_reference(csg.clone());
             },
             Shape::TestShape(test_shape) => test_shape.transform = transform,
         }
@@ -164,6 +176,7 @@ impl CommonShape for Shape {
                     Shape::Triangle(triangle) => triangle.material,
                     Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.material,
                     Shape::Group(group) => group.material,
+                    Shape::CSG(csg) => csg.material,
                     Shape::TestShape(test_shape) => test_shape.material,
                 }
             }
@@ -184,6 +197,11 @@ impl CommonShape for Shape {
 
                 Group::update_group_reference(group.clone());
             },
+            Shape::CSG(csg) => { 
+                csg.material = material.clone();
+
+                CSG::update_csg_reference(csg.clone());
+            },
             Shape::TestShape(test_shape) => test_shape.material = material,
         }
     }
@@ -198,6 +216,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.casts_shadow,
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.casts_shadow,
             Shape::Group(group) => group.casts_shadow,
+            Shape::CSG(csg) => csg.casts_shadow,
             Shape::TestShape(test_shape) => test_shape.casts_shadow,
         }
     }
@@ -215,6 +234,11 @@ impl CommonShape for Shape {
                 group.casts_shadow = casts_shadow;
 
                 Group::update_group_reference(group.clone());
+            },
+            Shape::CSG(csg) => { 
+                csg.casts_shadow = casts_shadow;
+
+                CSG::update_csg_reference(csg.clone());
             },
             Shape::TestShape(test_shape) => test_shape.casts_shadow = casts_shadow,
         }
@@ -325,6 +349,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.parent,
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.parent,
             Shape::Group(group) => group.parent,
+            Shape::CSG(csg) => csg.parent,
             Shape::TestShape(test_shape) => test_shape.parent,
         }
     }
@@ -342,6 +367,11 @@ impl CommonShape for Shape {
                 group.parent = Some(parent);
 
                 Group::update_group_reference(group.clone());
+            },
+            Shape::CSG(csg) => {
+                csg.parent = Some(parent);
+
+                CSG::update_csg_reference(csg.clone());
             },
             Shape::TestShape(test_shape) => test_shape.parent = Some(parent),
         }
@@ -389,6 +419,21 @@ impl CommonShape for Shape {
         }
     }
 
+    fn includes(&self, other: Shape) -> bool {
+        match self {
+            Shape::Sphere(sphere) => *sphere.get_id() == other.get_id(),
+            Shape::Plane(plane) => *plane.get_id() == other.get_id(),
+            Shape::Cube(cube) => *cube.get_id() == other.get_id(),
+            Shape::Cylinder(cylinder) => *cylinder.get_id() == other.get_id(),
+            Shape::Cone(cone) => *cone.get_id() == other.get_id(),
+            Shape::Triangle(triangle) => *triangle.get_id() == other.get_id(),
+            Shape::SmoothTriangle(smooth_triangle) => *smooth_triangle.get_id() == other.get_id(),
+            Shape::Group(group) => group.shapes.iter().any(|s| s.includes(other.clone())),
+            Shape::CSG(csg) => csg.left.includes(other.clone()) || csg.right.includes(other.clone()),
+            Shape::TestShape(test_shape) => *test_shape.get_id() == other.get_id(),
+        }
+    }
+
     fn bounds_of(&self) -> Bound {
         match self {
             Shape::Sphere(sphere) => sphere.bounds_of(),
@@ -399,6 +444,7 @@ impl CommonShape for Shape {
             Shape::Triangle(triangle) => triangle.bounds_of(),
             Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.bounds_of(),
             Shape::Group(group) => group.bounds_of(),
+            Shape::CSG(csg) => csg.bounds_of(),
             Shape::TestShape(test_shape) => test_shape.bounds_of(),
         }
     }

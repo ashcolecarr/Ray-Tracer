@@ -45,7 +45,8 @@ fn main() {
     //draw_cone_scene();
     //draw_hexagon();
     //render_teapot();
-    render_test_cube();
+    //render_test_cube();
+    render_cover_image();
 }
 
 pub fn draw_projectile() {
@@ -870,4 +871,132 @@ pub fn render_test_cube() {
     let canvas = camera.render(world);
 
     fs::write("test_cube.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn render_cover_image() {
+    let white_material = Material::new().with_color(WHITE).with_diffuse(0.7)
+        .with_ambient(0.1).with_specular(0.).with_reflective(0.1);
+    let blue_material = Material::new().with_color(Color::new(0.537, 0.831, 0.914))
+        .with_diffuse(0.7).with_ambient(0.1).with_specular(0.).with_reflective(0.1);
+    let red_material = Material::new().with_color(Color::new(0.941, 0.322, 0.388))
+        .with_diffuse(0.7).with_ambient(0.1).with_specular(0.).with_reflective(0.1);
+    let purple_material = Material::new().with_color(Color::new(0.373, 0.404, 0.55))
+        .with_diffuse(0.7).with_ambient(0.1).with_specular(0.).with_reflective(0.1);
+
+    let standard_transform = scale(0.5, 0.5, 0.5) * translate(1., -1., 1.);
+    let large_object = scale(3.5, 3.5, 3.5) * standard_transform.clone();
+    let medium_object = scale(3., 3., 3.) * standard_transform.clone();
+    let small_object = scale(2., 2., 2.) * standard_transform;
+    
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(50., 100., -50.), Color::new(1., 1., 1.)));
+    world.lights.push(Light::point_light(Tuple::point(-400., 50., -10.), Color::new(0.2, 0.2, 0.2)));
+
+    let mut plane = Shape::Plane(Plane::new());
+    let plane_material = Material::new().with_color(WHITE).with_ambient(1.)
+        .with_diffuse(0.).with_specular(0.);
+    let plane_transform = translate(0., 0., 500.) * rotate(1.5707963267948966, Axis::X);
+    plane.set_material(plane_material);
+    plane.set_transform(plane_transform);
+    world.objects.push(plane);
+
+    let mut sphere = Shape::Sphere(Sphere::new());
+    let sphere_material = Material::new().with_color(Color::new(0.373, 0.404, 0.55))
+        .with_diffuse(0.2).with_ambient(0.).with_specular(1.).with_shininess(200.)
+        .with_reflective(0.7).with_transparency(0.7).with_refractive_index(1.5);
+    sphere.set_material(sphere_material);
+    sphere.set_transform(large_object.clone());
+    world.objects.push(sphere);
+
+    let mut white_cube1 = Shape::Cube(Cube::new());
+    white_cube1.set_material(white_material.clone());
+    white_cube1.set_transform(translate(4., 0., 0.) * medium_object.clone());
+    world.objects.push(white_cube1);
+
+    let mut blue_cube1 = Shape::Cube(Cube::new());
+    blue_cube1.set_material(blue_material.clone());
+    blue_cube1.set_transform(translate(8.5, 1.5, -0.5) * large_object.clone());
+    world.objects.push(blue_cube1);
+
+    let mut red_cube1 = Shape::Cube(Cube::new());
+    red_cube1.set_material(red_material.clone());
+    red_cube1.set_transform(translate(0., 0., 4.) * large_object.clone());
+    world.objects.push(red_cube1);
+
+    let mut white_cube2 = Shape::Cube(Cube::new());
+    white_cube2.set_material(white_material.clone());
+    white_cube2.set_transform(translate(4., 0., 4.) * small_object.clone());
+    world.objects.push(white_cube2);
+
+    let mut purple_cube1 = Shape::Cube(Cube::new());
+    purple_cube1.set_material(purple_material.clone());
+    purple_cube1.set_transform(translate(7.5, 0.5, 4.) * medium_object.clone());
+    world.objects.push(purple_cube1);
+
+    let mut white_cube3 = Shape::Cube(Cube::new());
+    white_cube3.set_material(white_material.clone());
+    white_cube3.set_transform(translate(-0.25, 0.25, 8.) * medium_object.clone());
+    world.objects.push(white_cube3);
+
+    let mut blue_cube2 = Shape::Cube(Cube::new());
+    blue_cube2.set_material(blue_material.clone());
+    blue_cube2.set_transform(translate(4., 1., 7.5) * large_object.clone());
+    world.objects.push(blue_cube2);
+
+    let mut red_cube2 = Shape::Cube(Cube::new());
+    red_cube2.set_material(red_material.clone());
+    red_cube2.set_transform(translate(10., 2., 7.5) * medium_object.clone());
+    world.objects.push(red_cube2);
+
+    let mut white_cube4 = Shape::Cube(Cube::new());
+    white_cube4.set_material(white_material.clone());
+    white_cube4.set_transform(translate(8., 2., 12.) * small_object.clone());
+    world.objects.push(white_cube4);
+
+    let mut white_cube5 = Shape::Cube(Cube::new());
+    white_cube5.set_material(white_material.clone());
+    white_cube5.set_transform(translate(20., 1., 9.) * small_object.clone());
+    world.objects.push(white_cube5);
+
+    let mut blue_cube3 = Shape::Cube(Cube::new());
+    blue_cube3.set_material(blue_material.clone());
+    blue_cube3.set_transform(translate(-0.5, -5., 0.25) * large_object.clone());
+    world.objects.push(blue_cube3);
+
+    let mut red_cube3 = Shape::Cube(Cube::new());
+    red_cube3.set_material(red_material.clone());
+    red_cube3.set_transform(translate(4., -4., 0.) * large_object.clone());
+    world.objects.push(red_cube3);
+
+    let mut white_cube6 = Shape::Cube(Cube::new());
+    white_cube6.set_material(white_material.clone());
+    white_cube6.set_transform(translate(8.5, -4., 0.) * large_object.clone());
+    world.objects.push(white_cube6);
+
+    let mut white_cube7 = Shape::Cube(Cube::new());
+    white_cube7.set_material(white_material.clone());
+    white_cube7.set_transform(translate(0., -4., 4.) * large_object.clone());
+    world.objects.push(white_cube7);
+
+    let mut purple_cube2 = Shape::Cube(Cube::new());
+    purple_cube2.set_material(purple_material.clone());
+    purple_cube2.set_transform(translate(-0.5, -4.5, 8.) * large_object.clone());
+    world.objects.push(purple_cube2);
+
+    let mut white_cube8 = Shape::Cube(Cube::new());
+    white_cube8.set_material(white_material.clone());
+    white_cube8.set_transform(translate(0., -8., 4.) * large_object.clone());
+    world.objects.push(white_cube8);
+
+    let mut white_cube9 = Shape::Cube(Cube::new());
+    white_cube9.set_material(white_material.clone());
+    white_cube9.set_transform(translate(-0.5, -8.5, 8.) * large_object.clone());
+    world.objects.push(white_cube9);
+
+    let mut camera = Camera::new(500, 500, 0.785);
+    camera.transform = view_transform(Tuple::point(-6., 6., -10.), Tuple::point(6., 0., 6.), Tuple::vector(-0.45, 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("cover_image.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
