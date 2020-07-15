@@ -22,6 +22,7 @@ use ray_tracer::shape::{Shape, CommonShape};
 use ray_tracer::sphere::Sphere;
 use ray_tracer::tick;
 use ray_tracer::transformation::*;
+use ray_tracer::triangle::Triangle;
 use ray_tracer::tuple::Tuple;
 use ray_tracer::WHITE;
 use ray_tracer::world::World;
@@ -46,7 +47,9 @@ fn main() {
     //draw_hexagon();
     //render_teapot();
     //render_test_cube();
-    render_cover_image();
+    //render_cover_image();
+    //render_pyramid_scene();
+    render_whitefoil();
 }
 
 pub fn draw_projectile() {
@@ -999,4 +1002,163 @@ pub fn render_cover_image() {
     let canvas = camera.render(world);
 
     fs::write("cover_image.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn render_pyramid_scene() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
+
+    let mut plane = Shape::Plane(Plane::new());
+    let plane_material = Material::new().with_color(Color::new(0.1, 0.5, 0.1))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+    plane.set_material(plane_material);
+    world.objects.push(plane);
+
+    let mut plane2 = Shape::Plane(Plane::new());
+    let plane_material = Material::new().with_color(Color::new(0.4824, 0.8275, 0.9686))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+    plane2.set_material(plane_material);
+    plane2.set_transform(translate(0., 15., 0.));
+    world.objects.push(plane2);
+
+    let pyramid_material = Material::new().with_color(Color::new(0.8, 0.8, 0.8))
+        .with_diffuse(0.2).with_ambient(0.).with_specular(1.).with_shininess(300.)
+        .with_reflective(0.);
+
+    let mut pyramid_side1 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., -2.), Tuple::point(2., 0., -2.)));
+    pyramid_side1.set_material(pyramid_material.clone());
+    world.objects.push(pyramid_side1);
+
+    let mut pyramid_side2 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., -2.), Tuple::point(-2., 0., 2.)));
+    pyramid_side2.set_material(pyramid_material.clone());
+    world.objects.push(pyramid_side2);
+
+    let mut pyramid_side3 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., 2.), Tuple::point(2., 0., 2.)));
+    pyramid_side3.set_material(pyramid_material.clone());
+    world.objects.push(pyramid_side3);
+
+    let mut pyramid_side4 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(2., 0., 2.), Tuple::point(-2., 0., -2.)));
+    pyramid_side4.set_material(pyramid_material.clone());
+    world.objects.push(pyramid_side4);
+
+    let sphere_material = Material::new().with_color(Color::new(0.1, 0.1, 0.5));
+    let mut sphere = Shape::Sphere(Sphere::new());
+    sphere.set_material(sphere_material);
+    sphere.set_transform(translate(0., 5., 0.));
+    sphere.set_casts_shadow(false);
+    world.objects.push(sphere);
+
+    let mut camera = Camera::new(500, 500, PI / 4.);
+    camera.transform = view_transform(Tuple::point(-2., 0.1, -2.), Tuple::point(0., 5., 0.), Tuple::vector(0., 1., 0.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("pyramid_scene.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
+}
+
+pub fn render_whitefoil() {
+    let mut world = World::new();
+    world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
+
+    let red_material = Material::new().with_color(Color::new(0.7098, 0.1882, 0.0118))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+    let yellow_material = Material::new().with_color(Color::new(0.8431, 0.698, 0.))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+    let white_material = Material::new().with_color(Color::new(0.8196, 0.8196, 0.8118))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+    let black_material = Material::new().with_color(Color::new(0.102, 0.102, 0.102))
+        .with_ambient(1.).with_diffuse(0.).with_specular(0.);
+
+    let mut plane = Shape::Plane(Plane::new());
+    plane.set_material(red_material.clone());
+    plane.set_transform(translate(0., -0.1, 0.));
+    world.objects.push(plane);
+
+    // Build the rays spiralling around the edges.
+    let top_base_position = -3.98;
+    let right_base_position = 3.98;
+    let bottom_base_position = 3.98;
+    let left_base_position = -3.98;
+    for pos in 0..22 {
+        let top_position = top_base_position + (pos as f64) * 0.37;
+        let right_position = right_base_position - (pos as f64) * 0.37;
+        let bottom_position = bottom_base_position - (pos as f64) * 0.37;
+        let left_position = left_base_position + (pos as f64) * 0.37;
+
+        let mut top_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(top_position, 0.1, 4.1), Tuple::point(top_position + 0.18, 0.1, 4.1)));
+        top_triangle.set_material(yellow_material.clone());
+        world.objects.push(top_triangle);
+
+        let mut right_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(4.1, 0.1, right_position), Tuple::point(4.1, 0.1, right_position - 0.18)));
+        right_triangle.set_material(yellow_material.clone());
+        world.objects.push(right_triangle);
+
+        let mut bottom_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(bottom_position, 0.1, -4.1), Tuple::point(bottom_position - 0.18, 0.1, -4.1)));
+        bottom_triangle.set_material(yellow_material.clone());
+        world.objects.push(bottom_triangle);
+
+        let mut left_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(-4.1, 0.1, left_position), Tuple::point(-4.1, 0.1, left_position + 0.18)));
+        left_triangle.set_material(yellow_material.clone());
+        world.objects.push(left_triangle);
+    }
+
+    let mut black_cube = Shape::Cube(Cube::new());
+    black_cube.set_material(black_material.clone());
+    black_cube.set_transform(translate(0., 0.2, 0.) * scale(3., 0.1, 3.));
+    world.objects.push(black_cube);
+
+    let mut red_cube = Shape::Cube(Cube::new());
+    red_cube.set_material(red_material.clone());
+    red_cube.set_transform(translate(0., 0.3, 0.) * scale(2., 0.1, 2.));
+    world.objects.push(red_cube);
+
+    let mut yellow_cube1 = Shape::Cube(Cube::new());
+    yellow_cube1.set_material(yellow_material.clone());
+    yellow_cube1.set_transform(translate(0., 0.4, 0.) * scale(3., 0.1, 0.4) * rotate(PI / 4., Axis::Y));
+    world.objects.push(yellow_cube1);
+
+    let mut yellow_cube2 = Shape::Cube(Cube::new());
+    yellow_cube2.set_material(yellow_material.clone());
+    yellow_cube2.set_transform(translate(0., 0.4, 0.) * scale(0.4, 0.1, 3.) * rotate(PI / 4., Axis::Y));
+    world.objects.push(yellow_cube2);
+    
+    let mut white_cube = Shape::Cube(Cube::new());
+    white_cube.set_material(white_material.clone());
+    white_cube.set_transform(translate(0., 0.5, 0.) * rotate(PI / 4., Axis::Y) * scale(0.5, 0.1, 0.5));
+    world.objects.push(white_cube);
+
+    // Build the rays spiralling around the edges.
+    let top_base_position = -3.98;
+    let right_base_position = 3.98;
+    let bottom_base_position = 3.98;
+    let left_base_position = -3.98;
+    for pos in 0..22 {
+        let top_position = top_base_position + (pos as f64) * 0.37;
+        let right_position = right_base_position - (pos as f64) * 0.37;
+        let bottom_position = bottom_base_position - (pos as f64) * 0.37;
+        let left_position = left_base_position + (pos as f64) * 0.37;
+
+        let mut top_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(top_position, 0.1, 4.1), Tuple::point(top_position + 0.18, 0.1, 4.1)));
+        top_triangle.set_material(yellow_material.clone());
+        world.objects.push(top_triangle);
+
+        let mut right_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(4.1, 0.1, right_position), Tuple::point(4.1, 0.1, right_position - 0.18)));
+        right_triangle.set_material(yellow_material.clone());
+        world.objects.push(right_triangle);
+
+        let mut bottom_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(bottom_position, 0.1, -4.1), Tuple::point(bottom_position - 0.18, 0.1, -4.1)));
+        bottom_triangle.set_material(yellow_material.clone());
+        world.objects.push(bottom_triangle);
+
+        let mut left_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(-4.1, 0.1, left_position), Tuple::point(-4.1, 0.1, left_position + 0.18)));
+        left_triangle.set_material(yellow_material.clone());
+        world.objects.push(left_triangle);
+    }
+
+    let mut camera = Camera::new(100, 100, PI / 4.);
+    camera.transform = view_transform(Tuple::point(0., 10., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
+    
+    let canvas = camera.render(world);
+
+    fs::write("whitefoil.ppm", canvas.canvas_to_ppm()).expect("File could not be written.");
 }
