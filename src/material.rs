@@ -96,7 +96,7 @@ impl Material {
 
     pub fn lighting(&self, object: Shape, light: Light, point: Tuple, eye_vector: Tuple, normal_vector: Tuple, in_shadow: bool) -> Color {
         let real_color = if self.pattern.is_some() {
-            self.pattern.clone().unwrap().pattern_at_shape(object, point)
+            self.pattern.clone().unwrap().pattern_at_shape(&object, point)
         } else {
             self.color
         };

@@ -38,12 +38,12 @@ pub enum Shape {
 
 pub trait CommonShape {
     fn intersect(&self, ray: Ray) -> Vec<Intersection>;
-    fn normal_at(&self, world_point: Tuple, hit: Intersection) -> Tuple;
+    fn normal_at(&self, world_point: Tuple, hit: &Intersection) -> Tuple;
     fn get_id(&self) -> i32;
     fn get_transform(&self) -> Matrix;
-    fn set_transform(&mut self, transform: Matrix);
+    fn set_transform(&mut self, transform: &Matrix);
     fn get_material(&self) -> Material;
-    fn set_material(&mut self, material: Material);
+    fn set_material(&mut self, material: &Material);
     fn get_casts_shadow(&self) -> bool;
     fn set_casts_shadow(&mut self, casts_shadow: bool);
     fn get_minimum(&self) -> f64;
@@ -62,18 +62,18 @@ pub trait CommonShape {
     fn add_child(&mut self, shape: &mut Shape);
     fn world_to_object(&self, point: Tuple) -> Tuple;
     fn normal_to_world(&self, normal: Tuple) -> Tuple;
-    fn includes(&self, other: Shape) -> bool;
+    fn includes(&self, other: &Shape) -> bool;
     fn bounds_of(&self) -> Bound;
     fn parent_space_bounds_of(&self) -> Bound;
     fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>);
-    fn make_subgroup(&mut self, shapes: Vec<Shape>);
+    fn make_subgroup(&mut self, shapes: &mut Vec<Shape>);
     fn divide(&mut self, threshold: usize);
 }
 
 impl CommonShape for Shape {
     fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         let inverse = self.get_transform().inverse().unwrap();
-        let local_ray = ray.transform(inverse);
+        let local_ray = ray.transform(&inverse);
 
         match self {
             Shape::Sphere(sphere) => sphere.intersect(local_ray),
@@ -89,7 +89,7 @@ impl CommonShape for Shape {
         }
     }
     
-    fn normal_at(&self, world_point: Tuple, hit: Intersection) -> Tuple {
+    fn normal_at(&self, world_point: Tuple, hit: &Intersection) -> Tuple {
         let local_point = self.world_to_object(world_point);
         let local_normal = match self {
             Shape::Sphere(sphere) => sphere.normal_at(local_point, hit),
@@ -108,7 +108,7 @@ impl CommonShape for Shape {
     }
 
     fn get_id(&self) -> i32 {
-        match self.clone() {
+        match self {
             Shape::Sphere(sphere) => *sphere.get_id(),
             Shape::Plane(plane) => *plane.get_id(),
             Shape::Cube(cube) => *cube.get_id(),
@@ -123,40 +123,40 @@ impl CommonShape for Shape {
     }
 
     fn get_transform(&self) -> Matrix {
-        match self.clone() {
-            Shape::Sphere(sphere) => sphere.transform,
-            Shape::Plane(plane) => plane.transform,
-            Shape::Cube(cube) => cube.transform,
-            Shape::Cylinder(cylinder) => cylinder.transform,
-            Shape::Cone(cone) => cone.transform,
-            Shape::Triangle(triangle) => triangle.transform,
-            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform,
-            Shape::Group(group) => group.transform,
-            Shape::CSG(csg) => csg.transform,
-            Shape::TestShape(test_shape) => test_shape.transform,
+        match self {
+            Shape::Sphere(sphere) => sphere.transform.clone(),
+            Shape::Plane(plane) => plane.transform.clone(),
+            Shape::Cube(cube) => cube.transform.clone(),
+            Shape::Cylinder(cylinder) => cylinder.transform.clone(),
+            Shape::Cone(cone) => cone.transform.clone(),
+            Shape::Triangle(triangle) => triangle.transform.clone(),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform.clone(),
+            Shape::Group(group) => group.transform.clone(),
+            Shape::CSG(csg) => csg.transform.clone(),
+            Shape::TestShape(test_shape) => test_shape.transform.clone(),
         }
     }
 
-    fn set_transform(&mut self, transform: Matrix) {
+    fn set_transform(&mut self, transform: &Matrix) {
         match self {
-            Shape::Sphere(sphere) => sphere.transform = transform,
-            Shape::Plane(plane) => plane.transform = transform,
-            Shape::Cube(cube) => cube.transform = transform,
-            Shape::Cylinder(cylinder) => cylinder.transform = transform,
-            Shape::Cone(cone) => cone.transform = transform,
-            Shape::Triangle(triangle) => triangle.transform = transform,
-            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform = transform,
+            Shape::Sphere(sphere) => sphere.transform = transform.clone(),
+            Shape::Plane(plane) => plane.transform = transform.clone(),
+            Shape::Cube(cube) => cube.transform = transform.clone(),
+            Shape::Cylinder(cylinder) => cylinder.transform = transform.clone(),
+            Shape::Cone(cone) => cone.transform = transform.clone(),
+            Shape::Triangle(triangle) => triangle.transform = transform.clone(),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.transform = transform.clone(),
             Shape::Group(group) => { 
-                group.transform = transform;
+                group.transform = transform.clone();
 
                 Group::update_group_reference(group.clone());
             },
             Shape::CSG(csg) => { 
-                csg.transform = transform;
+                csg.transform = transform.clone();
 
                 CSG::update_csg_reference(csg.clone());
             },
-            Shape::TestShape(test_shape) => test_shape.transform = transform,
+            Shape::TestShape(test_shape) => test_shape.transform = transform.clone(),
         }
     }
 
@@ -183,15 +183,15 @@ impl CommonShape for Shape {
         }
     }
 
-    fn set_material(&mut self, material: Material) {
+    fn set_material(&mut self, material: &Material) {
         match self {
-            Shape::Sphere(sphere) => sphere.material = material,
-            Shape::Plane(plane) => plane.material = material,
-            Shape::Cube(cube) => cube.material = material,
-            Shape::Cylinder(cylinder) => cylinder.material = material,
-            Shape::Cone(cone) => cone.material = material,
-            Shape::Triangle(triangle) => triangle.material = material,
-            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.material = material,
+            Shape::Sphere(sphere) => sphere.material = material.clone(),
+            Shape::Plane(plane) => plane.material = material.clone(),
+            Shape::Cube(cube) => cube.material = material.clone(),
+            Shape::Cylinder(cylinder) => cylinder.material = material.clone(),
+            Shape::Cone(cone) => cone.material = material.clone(),
+            Shape::Triangle(triangle) => triangle.material = material.clone(),
+            Shape::SmoothTriangle(smooth_triangle) => smooth_triangle.material = material.clone(),
             Shape::Group(group) => { 
                 group.material = material.clone();
 
@@ -202,7 +202,7 @@ impl CommonShape for Shape {
 
                 CSG::update_csg_reference(csg.clone());
             },
-            Shape::TestShape(test_shape) => test_shape.material = material,
+            Shape::TestShape(test_shape) => test_shape.material = material.clone(),
         }
     }
 
@@ -419,7 +419,7 @@ impl CommonShape for Shape {
         }
     }
 
-    fn includes(&self, other: Shape) -> bool {
+    fn includes(&self, other: &Shape) -> bool {
         match self {
             Shape::Sphere(sphere) => *sphere.get_id() == other.get_id(),
             Shape::Plane(plane) => *plane.get_id() == other.get_id(),
@@ -428,8 +428,8 @@ impl CommonShape for Shape {
             Shape::Cone(cone) => *cone.get_id() == other.get_id(),
             Shape::Triangle(triangle) => *triangle.get_id() == other.get_id(),
             Shape::SmoothTriangle(smooth_triangle) => *smooth_triangle.get_id() == other.get_id(),
-            Shape::Group(group) => group.shapes.iter().any(|s| s.includes(other.clone())),
-            Shape::CSG(csg) => csg.left.includes(other.clone()) || csg.right.includes(other.clone()),
+            Shape::Group(group) => group.shapes.iter().any(|s| s.includes(other)),
+            Shape::CSG(csg) => csg.left.includes(other) || csg.right.includes(other),
             Shape::TestShape(test_shape) => *test_shape.get_id() == other.get_id(),
         }
     }
@@ -450,7 +450,7 @@ impl CommonShape for Shape {
     }
 
     fn parent_space_bounds_of(&self) -> Bound {
-        self.bounds_of().transform(self.get_transform())
+        self.bounds_of().transform(&self.get_transform())
     }
 
     fn partition_children(&mut self) -> (Vec<Shape>, Vec<Shape>) {
@@ -460,7 +460,7 @@ impl CommonShape for Shape {
         }
     }
     
-    fn make_subgroup(&mut self, shapes: Vec<Shape>) {
+    fn make_subgroup(&mut self, shapes: &mut Vec<Shape>) {
         match self {
             Shape::Group(group) => group.make_subgroup(shapes),
             _ => panic!("Only groups can contain subgroups."),
@@ -516,7 +516,7 @@ impl TestShape {
         vec![]
     }
 
-    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: &Intersection) -> Tuple {
         Tuple::vector(world_point.x, world_point.y, world_point.z)
     }
 
@@ -551,7 +551,7 @@ mod tests {
     fn assigning_transformation() {
         let mut shape = Shape::TestShape(TestShape::new());
         let transform =  translate(2., 3., 4.);
-        shape.set_transform(transform.clone());
+        shape.set_transform(&transform);
         
         let expected = transform;
 
@@ -576,9 +576,9 @@ mod tests {
         let mut shape = Shape::TestShape(TestShape::new());
         let mut material: Material = Default::default();
         material.ambient = 1.;
-        shape.set_material(material.clone());
+        shape.set_material(&material);
         
-        let expected = material.clone();
+        let expected = material;
 
         let actual = shape.get_material();
 
@@ -589,7 +589,7 @@ mod tests {
     fn intersecting_scaled_shape_with_ray() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let mut shape = Shape::TestShape(TestShape::new());
-        shape.set_transform(scale(2., 2., 2.));
+        shape.set_transform(&scale(2., 2., 2.));
         let _intersections = shape.intersect(ray);
 
         let expected = Ray::new(Tuple::point(0., 0., -2.5), Tuple::vector(0., 0., 0.5));
@@ -605,7 +605,7 @@ mod tests {
     fn intersecting_translated_shape_with_ray() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let mut shape = Shape::TestShape(TestShape::new());
-        shape.set_transform(translate(5., 0., 0.));
+        shape.set_transform(&translate(5., 0., 0.));
         let _intersections = shape.intersect(ray);
 
         let expected = Ray::new(Tuple::point(-5., 0., -5.), Tuple::vector(0., 0., 1.));
@@ -620,12 +620,12 @@ mod tests {
     #[test]
     fn computing_normal_on_translated_shape() {
         let mut shape = Shape::TestShape(TestShape::new());
-        shape.set_transform(translate(0., 1., 0.));
+        shape.set_transform(&translate(0., 1., 0.));
         let intersection = Intersection::new(1., shape.clone());
 
         let expected = Tuple::vector(0., 0.70711, -0.70711);
 
-        let actual = shape.normal_at(Tuple::point(0., 1.70711, -0.70711), intersection);
+        let actual = shape.normal_at(Tuple::point(0., 1.70711, -0.70711), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -634,12 +634,12 @@ mod tests {
     fn computing_normal_on_transformed_sphere() {
         let mut shape = Shape::TestShape(TestShape::new());
         let transform = scale(1., 0.5, 1.) * rotate(PI / 5., Axis::Z);
-        shape.set_transform(transform);
+        shape.set_transform(&transform);
         let intersection = Intersection::new(1., shape.clone());
 
         let expected = Tuple::vector(0., 0.97014, -0.24254);
 
-        let actual = shape.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.), intersection);
+        let actual = shape.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -677,12 +677,12 @@ mod tests {
     #[test]
     fn converting_point_from_world_space_to_object_space() {
         let mut group1 = Shape::Group(Group::new());
-        group1.set_transform(rotate(PI / 2., Axis::Y));
+        group1.set_transform(&rotate(PI / 2., Axis::Y));
         let mut group2 = Shape::Group(Group::new());
-        group2.set_transform(scale(2., 2., 2.));
+        group2.set_transform(&scale(2., 2., 2.));
         group1.add_child(&mut group2);
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(translate(5., 0., 0.));
+        shape.set_transform(&translate(5., 0., 0.));
         group2.add_child(&mut shape);
 
         let expected = Tuple::point(0., 0., -1.);
@@ -695,12 +695,12 @@ mod tests {
     #[test]
     fn converting_normal_from_object_to_world_space() {
         let mut group1 = Shape::Group(Group::new());
-        group1.set_transform(rotate(PI / 2., Axis::Y));
+        group1.set_transform(&rotate(PI / 2., Axis::Y));
         let mut group2 = Shape::Group(Group::new());
-        group2.set_transform(scale(1., 2., 3.));
+        group2.set_transform(&scale(1., 2., 3.));
         group1.add_child(&mut group2);
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(translate(5., 0., 0.));
+        shape.set_transform(&translate(5., 0., 0.));
         group2.add_child(&mut shape);
 
         let expected = Tuple::vector(0.28571, 0.42857, -0.85714);
@@ -713,18 +713,18 @@ mod tests {
     #[test]
     fn finding_normal_on_child_object() {
         let mut group1 = Shape::Group(Group::new());
-        group1.set_transform(rotate(PI / 2., Axis::Y));
+        group1.set_transform(&rotate(PI / 2., Axis::Y));
         let mut group2 = Shape::Group(Group::new());
-        group2.set_transform(scale(1., 2., 3.));
+        group2.set_transform(&scale(1., 2., 3.));
         group1.add_child(&mut group2);
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(translate(5., 0., 0.));
+        shape.set_transform(&translate(5., 0., 0.));
         let intersection = Intersection::new(1., shape.clone());
         group2.add_child(&mut shape);
 
         let expected = Tuple::vector(0.2857, 0.42854, -0.85716);
 
-        let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774), intersection);
+        let actual = shape.normal_at(Tuple::point(1.7321, 1.1547, -5.5774), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -747,7 +747,7 @@ mod tests {
     #[test]
     fn querying_shapes_bounding_box_in_its_parents_space() {
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(translate(1., -3., 5.) * scale(0.5, 2., 4.));
+        shape.set_transform(&(translate(1., -3., 5.) * scale(0.5, 2., 4.)));
 
         let expected_minimum = Tuple::point(0.5, -5., 1.);
         let expected_maximum = Tuple::point(1.5, -1., 9.);

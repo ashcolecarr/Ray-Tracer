@@ -27,17 +27,17 @@ impl Intersection {
         Self { t, object, u: Some(u), v: Some(v), }
     }
 
-    pub fn hit(intersections: Vec<Self>) -> Option<Self> {
+    pub fn hit(intersections: &Vec<Self>) -> Option<Self> {
         // This is assuming that the list of intersections is already sorted.
         match intersections.into_iter().filter(|i| i.t > 0.).next() {
-            Some(i) => Some(i),
+            Some(i) => Some(i.clone()),
             None => None
         }
     }
 
-    pub fn prepare_computations(&self, ray: Ray, intersections: Vec<Intersection>) -> Computations {
+    pub fn prepare_computations(&self, ray: Ray, intersections: &Vec<Intersection>) -> Computations {
         let point = ray.position(self.t);
-        let mut normal_vector = self.object.normal_at(point, intersections[0].clone());
+        let mut normal_vector = self.object.normal_at(point, &intersections[0]);
         let eye_vector = -ray.direction;
 
         let inside = if normal_vector.dot(eye_vector) < 0. {
@@ -55,7 +55,7 @@ impl Intersection {
         let mut n2 = 0.;
         let mut containers: Vec<Shape> = Vec::new();
         for intersection in intersections {
-            if intersection == *self {
+            if *intersection == *self {
                 n1 = if containers.is_empty() {
                     1.
                 } else {
@@ -70,7 +70,7 @@ impl Intersection {
                 containers.push(intersection.clone().object);
             }
 
-            if intersection == *self {
+            if *intersection == *self {
                 n2 = if containers.is_empty() {
                     1.
                 } else {
@@ -94,7 +94,7 @@ impl Intersection {
         }
     }
 
-    pub fn schlick(computations: Computations) -> f64 {
+    pub fn schlick(computations: &Computations) -> f64 {
         let mut cos = computations.eye_vector.dot(computations.normal_vector);
 
         if computations.n1 > computations.n2 {
@@ -184,7 +184,7 @@ mod tests {
         
         let expected = intersection1;
 
-        let actual = Intersection::hit(intersections).unwrap();
+        let actual = Intersection::hit(&intersections).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -198,7 +198,7 @@ mod tests {
         
         let expected = intersection2.clone();
 
-        let actual = Intersection::hit(intersections).unwrap();
+        let actual = Intersection::hit(&intersections).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -210,7 +210,7 @@ mod tests {
         let intersection2 = Intersection::new(-1., sphere.clone());
         let intersections = intersections!(intersection2, intersection1);
         
-        let actual = Intersection::hit(intersections);
+        let actual = Intersection::hit(&intersections);
 
         assert!(actual.is_none());
     }
@@ -226,7 +226,7 @@ mod tests {
         
         let expected = intersection4.clone();
 
-        let actual = Intersection::hit(intersections).unwrap();
+        let actual = Intersection::hit(&intersections).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -251,7 +251,7 @@ mod tests {
             under_point: Tuple::point(0., 0., -1.) - Tuple::vector(0., 0., -1.) * EPSILON,
         };
 
-        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let actual = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         assert_eq!(expected, actual);
     }
@@ -262,7 +262,7 @@ mod tests {
         let shape = Shape::Sphere(Sphere::new());
         let intersection = Intersection { t: 4., object: shape.clone(), u: None, v: None, };
 
-        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let actual = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         assert!(!actual.inside);
     }
@@ -287,7 +287,7 @@ mod tests {
             under_point: Tuple::point(0., 0., 1.) - (Tuple::vector(0., 0., -1.) * EPSILON),
         };
 
-        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let actual = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         assert!(actual.inside);
         assert_eq!(expected, actual);
@@ -297,9 +297,9 @@ mod tests {
     fn hit_shold_offset_point() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(translate(0., 0., 1.));
+        shape.set_transform(&translate(0., 0., 1.));
         let intersection = Intersection::new(5., shape);
-        let actual = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let actual = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         assert!(actual.over_point.z < -EPSILON / 2.);
         assert!(actual.point.z > actual.over_point.z);
@@ -310,7 +310,7 @@ mod tests {
         let shape = Shape::Plane(Plane::new());
         let ray = Ray::new(Tuple::point(0., 1., -1.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersection = Intersection::new(2_f64.sqrt(), shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Tuple::vector(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.);
 
@@ -322,19 +322,19 @@ mod tests {
     #[test]
     fn finding_n1_and_n2_at_various_intersections() {
         let mut sphere1 = Shape::Sphere(Sphere::glass_sphere());
-        sphere1.set_transform(scale(2., 2., 2.));
+        sphere1.set_transform(&scale(2., 2., 2.));
 
         let mut sphere2_material: Material = Default::default();
         sphere2_material.refractive_index = 2.;
         let mut sphere2 = Shape::Sphere(Sphere::glass_sphere());
-        sphere2.set_transform(translate(0., 0., -0.25));
-        sphere2.set_material(sphere2_material);
+        sphere2.set_transform(&translate(0., 0., -0.25));
+        sphere2.set_material(&sphere2_material);
 
         let mut sphere3_material: Material = Default::default();
         sphere3_material.refractive_index = 2.5;
         let mut sphere3 = Shape::Sphere(Sphere::glass_sphere());
-        sphere3.set_transform(scale(2., 2., 2.));
-        sphere3.set_material(sphere3_material);
+        sphere3.set_transform(&scale(2., 2., 2.));
+        sphere3.set_material(&sphere3_material);
 
         let ray = Ray::new(Tuple::point(0., 0., -4.), Tuple::vector(0., 0., -1.));
         let intersections = intersections!(Intersection::new(2., sphere1.clone()), 
@@ -346,7 +346,7 @@ mod tests {
             (2.5, 2.5), (2.5, 1.5), (1.5, 1.)];
         
         for index in 0..6 {
-            let actual = intersections[index].prepare_computations(ray, intersections.clone());
+            let actual = intersections[index].prepare_computations(ray, &intersections);
             assert!(near_eq(expected[index].0, actual.n1));
             assert!(near_eq(expected[index].1, actual.n2));
         }
@@ -356,10 +356,10 @@ mod tests {
     fn under_point_is_offset_below_surface() {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let mut shape = Shape::Sphere(Sphere::glass_sphere());
-        shape.set_transform(translate(0., 0., 1.));
+        shape.set_transform(&translate(0., 0., 1.));
         let intersection = Intersection::new(5., shape);
         let intersections = intersections!(intersection.clone());
-        let computations = intersection.prepare_computations(ray, intersections);
+        let computations = intersection.prepare_computations(ray, &intersections);
 
         assert!(computations.under_point.z > EPSILON / 2.);
         assert!(computations.point.z < computations.under_point.z);
@@ -371,11 +371,11 @@ mod tests {
         let ray = Ray::new(Tuple::point(0., 0., 2_f64.sqrt()), Tuple::vector(0., 1., 0.));
         let intersections = intersections!(Intersection::new(-2_f64.sqrt() / 2., shape.clone()),
             Intersection::new(2_f64.sqrt() / 2., shape));   
-        let computations = intersections[1].prepare_computations(ray, intersections.clone());
+        let computations = intersections[1].prepare_computations(ray, &intersections);
 
         let expected = 1.;
 
-        let actual = Intersection::schlick(computations);
+        let actual = Intersection::schlick(&computations);
 
         assert!(near_eq(expected, actual));        
     }
@@ -386,11 +386,11 @@ mod tests {
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 1., 0.));
         let intersections = intersections!(Intersection::new(-1., shape.clone()),
             Intersection::new(1., shape));   
-        let computations = intersections[1].prepare_computations(ray, intersections.clone());
+        let computations = intersections[1].prepare_computations(ray, &intersections);
 
         let expected = 0.04;
 
-        let actual = Intersection::schlick(computations);
+        let actual = Intersection::schlick(&computations);
 
         assert!(near_eq(expected, actual)); 
     }
@@ -400,11 +400,11 @@ mod tests {
         let shape = Shape::Sphere(Sphere::glass_sphere());
         let ray = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
         let intersections = intersections!(Intersection::new(1.8589, shape));
-        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+        let computations = intersections[0].prepare_computations(ray, &intersections);
 
         let expected = 0.48873;
 
-        let actual = Intersection::schlick(computations);
+        let actual = Intersection::schlick(&computations);
 
         assert!(near_eq(expected, actual)); 
     }

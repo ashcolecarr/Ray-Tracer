@@ -22,9 +22,9 @@ impl Ray {
         self.origin + self.direction * t
     }
 
-    pub fn transform(&self, transformation: Matrix) -> Self {
+    pub fn transform(&self, transformation: &Matrix) -> Self {
         let origin_transform = transformation.clone() * self.origin;
-        let direction_transform = transformation * self.direction;
+        let direction_transform = transformation.clone() * self.direction;
 
         Ray::new(origin_transform, direction_transform)
     }
@@ -77,7 +77,7 @@ mod tests {
 
         let expected = Ray::new(Tuple::point(4., 6., 8.), Tuple::vector(0., 1., 0.));
 
-        let actual = ray.transform(transform);
+        let actual = ray.transform(&transform);
 
         assert_eq!(expected.origin, actual.origin);
         assert_eq!(expected.direction, actual.direction);
@@ -90,7 +90,7 @@ mod tests {
 
         let expected = Ray::new(Tuple::point(2., 6., 12.), Tuple::vector(0., 3., 0.));
 
-        let actual = ray.transform(transform);
+        let actual = ray.transform(&transform);
 
         assert_eq!(expected.origin, actual.origin);
         assert_eq!(expected.direction, actual.direction);

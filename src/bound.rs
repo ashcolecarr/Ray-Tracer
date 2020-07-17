@@ -61,7 +61,7 @@ impl Bound {
         self.box_contains_point(other.minimum) && self.box_contains_point(other.maximum)
     }
 
-    pub fn transform(&self, matrix: Matrix) -> Self {
+    pub fn transform(&self, matrix: &Matrix) -> Self {
         let points = vec![
             self.minimum,
             Tuple::point(self.minimum.x, self.minimum.y, self.maximum.z),
@@ -269,7 +269,7 @@ mod tests {
         let expected_minimum = Tuple::point(-1.41421, -1.7071, -1.7071);
         let expected_maximum = Tuple::point(1.41421, 1.7071, 1.7071);
 
-        let actual = box1.transform(matrix);
+        let actual = box1.transform(&matrix);
 
         assert_eq!(expected_minimum, actual.minimum);
         assert_eq!(expected_maximum, actual.maximum);

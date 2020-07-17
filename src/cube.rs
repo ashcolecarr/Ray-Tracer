@@ -78,7 +78,7 @@ impl Cube {
         }
     }
 
-    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: &Intersection) -> Tuple {
         let maxc = vec![world_point.x.abs(), world_point.y.abs(), world_point.z.abs()]
             .iter().fold(0./0., |max, &n| f64::max(max, n));
         
@@ -178,7 +178,7 @@ mod tests {
         
         for source in expecteds.iter().zip(points) {
             let (expected, point) = source;
-            let actual = cube.normal_at(point, intersection.clone());
+            let actual = cube.normal_at(point, &intersection);
             
             assert_eq!(*expected, actual);
         }

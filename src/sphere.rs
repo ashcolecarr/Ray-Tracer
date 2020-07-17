@@ -62,7 +62,7 @@ impl Sphere {
         ]
     }
 
-    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: &Intersection) -> Tuple {
         world_point - ORIGIN
     }
 
@@ -202,7 +202,7 @@ mod tests {
         
         let expected = Tuple::vector(1., 0., 0.);
 
-        let actual = sphere.normal_at(Tuple::point(1., 0., 0.), intersection);
+        let actual = sphere.normal_at(Tuple::point(1., 0., 0.), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -214,7 +214,7 @@ mod tests {
         
         let expected = Tuple::vector(0., 1., 0.);
 
-        let actual = sphere.normal_at(Tuple::point(0., 1., 0.), intersection);
+        let actual = sphere.normal_at(Tuple::point(0., 1., 0.), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -226,7 +226,7 @@ mod tests {
         
         let expected = Tuple::vector(0., 0., 1.);
 
-        let actual = sphere.normal_at(Tuple::point(0., 0., 1.), intersection);
+        let actual = sphere.normal_at(Tuple::point(0., 0., 1.), &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -239,7 +239,7 @@ mod tests {
 
         let expected = Tuple::vector(value, value, value);
 
-        let actual = sphere.normal_at(Tuple::point(value, value, value), intersection);
+        let actual = sphere.normal_at(Tuple::point(value, value, value), &intersection);
         
         assert_eq!(expected, actual);
     }
@@ -250,7 +250,7 @@ mod tests {
         let sphere = Sphere::new();
         let intersection = Intersection::new(1., Shape::Sphere(sphere.clone()));
 
-        let actual = sphere.normal_at(Tuple::point(value, value, value), intersection);
+        let actual = sphere.normal_at(Tuple::point(value, value, value), &intersection);
 
         let expected = actual.normalize();
         

@@ -26,10 +26,10 @@ impl Default for World {
         material.diffuse = 0.7;
         material.specular = 0.2;
         let mut sphere1 = Shape::Sphere(Sphere::new());
-        sphere1.set_material(material);
+        sphere1.set_material(&material);
 
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(scale(0.5, 0.5, 0.5));
+        sphere2.set_transform(&scale(0.5, 0.5, 0.5));
 
         let lights = vec![light];
         let objects = vec![sphere1, sphere2];
@@ -54,7 +54,7 @@ impl World {
         intersections
     }
 
-    pub fn shade_hit(&self, computations: Computations, remaining: i32) -> Color {
+    pub fn shade_hit(&self, computations: &Computations, remaining: i32) -> Color {
         let mut surface = BLACK;
         let shadowed = self.is_shadowed(computations.over_point);
         let material = computations.object.get_material();
@@ -65,8 +65,8 @@ impl World {
                 computations.normal_vector, shadow);
         }
         
-        let reflected = self.reflected_color(computations.clone(), remaining);
-        let refracted = self.refracted_color(computations.clone(), remaining);
+        let reflected = self.reflected_color(computations, remaining);
+        let refracted = self.refracted_color(computations, remaining);
         
         let material = computations.object.get_material();
         if material.reflective > 0. && material.transparency > 0. {
@@ -80,12 +80,12 @@ impl World {
 
     pub fn color_at(&self, ray: Ray, remaining: i32) -> Color {
         let intersections = self.intersect_world(ray);
-        let hit = Intersection::hit(intersections.clone());
+        let hit = Intersection::hit(&intersections);
         
         if hit.is_none() {
             BLACK
         } else {
-            self.shade_hit(hit.unwrap().prepare_computations(ray, intersections), remaining)
+            self.shade_hit(&hit.unwrap().prepare_computations(ray, &intersections), remaining)
         }
     }
 
@@ -98,7 +98,7 @@ impl World {
             let ray = Ray::new(point, direction);
             let intersections = self.intersect_world(ray);
 
-            let hit = Intersection::hit(intersections);
+            let hit = Intersection::hit(&intersections);
             match hit {
                 Some(hit) => hit.t < distance && hit.object.get_casts_shadow(),
                 None => false,
@@ -106,7 +106,7 @@ impl World {
         }).collect::<Vec<bool>>()
     }
 
-    pub fn reflected_color(&self, computations: Computations, remaining: i32) -> Color {
+    pub fn reflected_color(&self, computations: &Computations, remaining: i32) -> Color {
         if near_eq(computations.object.get_material().reflective, 0.) || remaining <= 0 {
             return BLACK;
         }
@@ -117,7 +117,7 @@ impl World {
         color * computations.object.get_material().reflective
     }
 
-    pub fn refracted_color(&self, computations: Computations, remaining: i32) -> Color {
+    pub fn refracted_color(&self, computations: &Computations, remaining: i32) -> Color {
         if near_eq(computations.object.get_material().transparency, 0.) || remaining <= 0 {
             return BLACK;
         }
@@ -168,10 +168,10 @@ mod tests {
         material.diffuse = 0.7;
         material.specular = 0.2;
         let mut expected_sphere1 = Shape::Sphere(Sphere::new());
-        expected_sphere1.set_material(material);
+        expected_sphere1.set_material(&material);
 
         let mut expected_sphere2 = Shape::Sphere(Sphere::new());
-        expected_sphere2.set_transform(scale(0.5, 0.5, 0.5));
+        expected_sphere2.set_transform(&scale(0.5, 0.5, 0.5));
 
         let actual: World = Default::default();
 
@@ -208,11 +208,11 @@ mod tests {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let shape = world.objects[0].clone();
         let intersection = Intersection::new(4., shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Color::new(0.38066, 0.47583, 0.2855);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -224,11 +224,11 @@ mod tests {
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 0., 1.));
         let shape = world.objects[1].clone();
         let intersection = Intersection::new(0.5, shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Color::new(0.90498, 0.90498, 0.90498);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -262,8 +262,8 @@ mod tests {
         let mut world: World = Default::default();
         let mut material: Material = Default::default();
         material.ambient = 1.;
-        world.objects[0].set_material(material.clone());
-        world.objects[1].set_material(material);
+        world.objects[0].set_material(&material);
+        world.objects[1].set_material(&material);
         let ray = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
 
         let expected = world.objects[1].get_material().color;
@@ -312,15 +312,15 @@ mod tests {
         let sphere1 = Shape::Sphere(Sphere::new());
         world.objects.push(sphere1);
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(translate(0., 0., 10.));
+        sphere2.set_transform(&translate(0., 0., 10.));
         world.objects.push(sphere2.clone());
         let ray = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
         let intersection = Intersection::new(4., sphere2);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Color::new(0.1, 0.1, 0.1);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -332,13 +332,13 @@ mod tests {
         let mut material: Material = Default::default();
         material.ambient = 1.;
         let mut shape = world.objects[1].clone();
-        shape.set_material(material);
+        shape.set_material(&material);
         let intersection = Intersection::new(1., shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = BLACK;
 
-        let actual = world.reflected_color(computations, DEFAULT_RECURSION);
+        let actual = world.reflected_color(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -349,16 +349,16 @@ mod tests {
         let mut material: Material = Default::default();
         material.reflective = 0.5;
         let mut shape = Shape::Plane(Plane::new());
-        shape.set_material(material);
-        shape.set_transform(translate(0., -1., 0.));
+        shape.set_material(&material);
+        shape.set_transform(&translate(0., -1., 0.));
         world.objects.push(shape.clone());
         let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersection = Intersection::new(2_f64.sqrt(), shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Color::new(0.19033, 0.23791, 0.14274);
 
-        let actual = world.reflected_color(computations, DEFAULT_RECURSION);
+        let actual = world.reflected_color(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -369,16 +369,16 @@ mod tests {
         let mut material: Material = Default::default();
         material.reflective = 0.5;
         let mut shape = Shape::Plane(Plane::new());
-        shape.set_material(material);
-        shape.set_transform(translate(0., -1., 0.));
+        shape.set_material(&material);
+        shape.set_transform(&translate(0., -1., 0.));
         world.objects.push(shape.clone());
         let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersection = Intersection::new(2_f64.sqrt(), shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = Color::new(0.87675, 0.92434, 0.82917);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -390,15 +390,15 @@ mod tests {
         let mut lower_material: Material = Default::default();
         lower_material.reflective = 1.;
         let mut lower = Shape::Plane(Plane::new());
-        lower.set_material(lower_material);
-        lower.set_transform(translate(0., -1., 0.));
+        lower.set_material(&lower_material);
+        lower.set_transform(&translate(0., -1., 0.));
         world.objects.push(lower);
 
         let mut upper_material: Material = Default::default();
         upper_material.reflective = 1.;
         let mut upper = Shape::Plane(Plane::new());
-        upper.set_material(upper_material);
-        upper.set_transform(translate(0., 1., 0.));
+        upper.set_material(&upper_material);
+        upper.set_transform(&translate(0., 1., 0.));
         world.objects.push(upper);
 
         let ray = Ray::new(ORIGIN, Tuple::vector(0., 1., 0.));
@@ -414,16 +414,16 @@ mod tests {
         let mut material: Material = Default::default();
         material.reflective = 0.5;
         let mut shape = Shape::Plane(Plane::new());
-        shape.set_material(material);
-        shape.set_transform(translate(0., -1., 0.));
+        shape.set_material(&material);
+        shape.set_transform(&translate(0., -1., 0.));
         world.objects.push(shape.clone());
         let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersection = Intersection::new(2_f64.sqrt(), shape);
-        let computations = intersection.prepare_computations(ray, vec![intersection.clone()]);
+        let computations = intersection.prepare_computations(ray, &vec![intersection.clone()]);
 
         let expected = BLACK;
 
-        let actual = world.reflected_color(computations, 0);
+        let actual = world.reflected_color(&computations, 0);
 
         assert_eq!(expected, actual);
     }
@@ -435,11 +435,11 @@ mod tests {
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let intersections = intersections!(Intersection::new(4., shape.clone()), 
             Intersection::new(6., shape));
-        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+        let computations = intersections[0].prepare_computations(ray, &intersections);
 
         let expected = BLACK;
 
-        let actual = world.refracted_color(computations, 5);
+        let actual = world.refracted_color(&computations, 5);
 
         assert_eq!(expected, actual);
     }
@@ -451,15 +451,15 @@ mod tests {
         material.transparency = 1.;
         material.refractive_index = 1.5;
         let mut shape = world.objects[0].clone();
-        shape.set_material(material);
+        shape.set_material(&material);
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let intersections = intersections!(Intersection::new(4., shape.clone()), 
             Intersection::new(6., shape));
-        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+        let computations = intersections[0].prepare_computations(ray, &intersections);
 
         let expected = BLACK;
 
-        let actual = world.refracted_color(computations, 0);
+        let actual = world.refracted_color(&computations, 0);
 
         assert_eq!(expected, actual);
     }
@@ -471,15 +471,15 @@ mod tests {
         material.transparency = 1.;
         material.refractive_index = 1.5;
         let mut shape = world.objects[0].clone();
-        shape.set_material(material);
+        shape.set_material(&material);
         let ray = Ray::new(Tuple::point(0., 0., 2_f64.sqrt() / 2.), Tuple::vector(0., 1., 0.));
         let intersections = intersections!(Intersection::new(-2_f64.sqrt() / 2., shape.clone()),
             Intersection::new(2_f64.sqrt() / 2., shape));
-        let computations = intersections[1].prepare_computations(ray, intersections.clone());
+        let computations = intersections[1].prepare_computations(ray, &intersections);
 
         let expected = BLACK;
 
-        let actual = world.refracted_color(computations, DEFAULT_RECURSION);
+        let actual = world.refracted_color(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -490,22 +490,22 @@ mod tests {
         let mut shape1_material: Material = Default::default();
         shape1_material.ambient = 1.;
         shape1_material.pattern = Some(Pattern::Test(TestPattern::new()));
-        world.objects[0].set_material(shape1_material);
+        world.objects[0].set_material(&shape1_material);
 
         let mut shape2_material: Material = Default::default();
         shape2_material.transparency = 1.;
         shape2_material.refractive_index = 1.5;
-        world.objects[1].set_material(shape2_material);
+        world.objects[1].set_material(&shape2_material);
 
         let ray = Ray::new(Tuple::point(0., 0., 0.1), Tuple::vector(0., 1., 0.));
         let intersections = intersections!(Intersection::new(-0.9899, world.objects[0].clone()),
             Intersection::new(-0.4899, world.objects[1].clone()), Intersection::new(0.4899, world.objects[1].clone()),
             Intersection::new(0.9899, world.objects[0].clone()));
-        let computations = intersections[2].prepare_computations(ray, intersections.clone());
+        let computations = intersections[2].prepare_computations(ray, &intersections);
 
         let expected = Color::new(0., 0.99887, 0.04722);
 
-        let actual = world.refracted_color(computations, DEFAULT_RECURSION);
+        let actual = world.refracted_color(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -517,25 +517,25 @@ mod tests {
         floor_material.transparency = 0.5;
         floor_material.refractive_index = 1.5;
         let mut floor = Shape::Plane(Plane::new());
-        floor.set_transform(translate(0., -1., 0.));
-        floor.set_material(floor_material);
+        floor.set_transform(&translate(0., -1., 0.));
+        floor.set_material(&floor_material);
         world.objects.push(floor.clone());
 
         let mut ball_material: Material = Default::default();
         ball_material.color = Color::new(1., 0., 0.);
         ball_material.ambient = 0.5;
         let mut ball = Shape::Sphere(Sphere::new());
-        ball.set_material(ball_material);
-        ball.set_transform(translate(0., -3.5, -0.5));
+        ball.set_material(&ball_material);
+        ball.set_transform(&translate(0., -3.5, -0.5));
         world.objects.push(ball);
 
         let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersections = intersections!(Intersection::new(2_f64.sqrt(), floor));
-        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+        let computations = intersections[0].prepare_computations(ray, &intersections);
 
         let expected = Color::new(0.93642, 0.68642, 0.68642);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -548,25 +548,25 @@ mod tests {
         floor_material.transparency = 0.5;
         floor_material.refractive_index = 1.5;
         let mut floor = Shape::Plane(Plane::new());
-        floor.set_transform(translate(0., -1., 0.));
-        floor.set_material(floor_material);
+        floor.set_transform(&translate(0., -1., 0.));
+        floor.set_material(&floor_material);
         world.objects.push(floor.clone());
 
         let mut ball_material: Material = Default::default();
         ball_material.color = Color::new(1., 0., 0.);
         ball_material.ambient = 0.5;
         let mut ball = Shape::Sphere(Sphere::new());
-        ball.set_material(ball_material);
-        ball.set_transform(translate(0., -3.5, -0.5));
+        ball.set_material(&ball_material);
+        ball.set_transform(&translate(0., -3.5, -0.5));
         world.objects.push(ball);
 
         let ray = Ray::new(Tuple::point(0., 0., -3.), Tuple::vector(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.));
         let intersections = intersections!(Intersection::new(2_f64.sqrt(), floor));
-        let computations = intersections[0].prepare_computations(ray, intersections.clone());
+        let computations = intersections[0].prepare_computations(ray, &intersections);
 
         let expected = Color::new(0.93391, 0.69643, 0.69243);
 
-        let actual = world.shade_hit(computations, DEFAULT_RECURSION);
+        let actual = world.shade_hit(&computations, DEFAULT_RECURSION);
 
         assert_eq!(expected, actual);
     }
@@ -576,7 +576,7 @@ mod tests {
         let mut world = World::new();
         world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), WHITE));
         let mut sphere = Shape::Sphere(Sphere::new());
-        sphere.set_transform(translate(0., 3., 0.));
+        sphere.set_transform(&translate(0., 3., 0.));
         sphere.set_casts_shadow(false);
         world.objects.push(sphere);
         let plane = Shape::Plane(Plane::new());
@@ -586,4 +586,19 @@ mod tests {
         
         assert!(!world.is_shadowed(point)[0]);
     }
+
+    //#[test]
+    //fn is_shadow_tests_for_occlusion_between_two_points() {
+    //    let world = World::default();
+    //    let points = vec![Tuple::point(-10., -10., 10.), Tuple::point(10., 10., 10.), 
+    //        Tuple::point(-20., -20., -20.), Tuple::point(-5., -5., -5.)];
+
+    //    let expecteds = vec![false, true, false, false];
+
+    //    for source in points.iter().zip(expecteds) {
+    //        let (point, expected) = source;
+
+    //        let actual = world.is_shadowed(point);
+    //    }
+    //}
 }

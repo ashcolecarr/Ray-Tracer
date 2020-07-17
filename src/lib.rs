@@ -90,7 +90,7 @@ pub fn tick(environment: Environment, projectile: Projectile) -> Projectile {
 
 fn hexagon_corner() -> Shape {
     let mut corner = Shape::Sphere(Sphere::new());
-    corner.set_transform(translate(0., 0., -1.) * scale(0.25, 0.25, 0.25));
+    corner.set_transform(&(translate(0., 0., -1.) * scale(0.25, 0.25, 0.25)));
 
     corner
 }
@@ -99,8 +99,8 @@ fn hexagon_edge() -> Shape {
     let mut edge = Shape::Cylinder(Cylinder::new());
     edge.set_minimum(0.);
     edge.set_maximum(1.);
-    edge.set_transform(translate(0., 0., -1.) * rotate(-(PI / 6.), Axis::Y) *
-        rotate(-(PI / 2.), Axis::Z) * scale(0.25, 1., 0.25));
+    edge.set_transform(&(translate(0., 0., -1.) * rotate(-(PI / 6.), Axis::Y) *
+        rotate(-(PI / 2.), Axis::Z) * scale(0.25, 1., 0.25)));
 
     edge
 }
@@ -118,7 +118,7 @@ pub fn hexagon() -> Shape {
 
     for n in 0..=5 {
         let mut side = hexagon_side();
-        side.set_transform(rotate((n as f64) * (PI / 3.), Axis::Y));
+        side.set_transform(&(rotate((n as f64) * (PI / 3.), Axis::Y)));
         hex.add_child(&mut side);
     }
 

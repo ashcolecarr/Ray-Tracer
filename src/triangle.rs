@@ -86,7 +86,7 @@ impl Triangle {
         vec![Intersection::new(t, Shape::Triangle(self.clone()))]
     }
 
-    pub fn normal_at(&self, _world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, _hit: &Intersection) -> Tuple {
         self.normal_vector
     }
 
@@ -131,9 +131,9 @@ mod tests {
 
         let expected = triangle.normal_vector;
 
-        let actual1 = triangle.normal_at(Tuple::point(0., 0.5, 0.), intersection.clone());
-        let actual2 = triangle.normal_at(Tuple::point(-0.5, 0.75, 0.), intersection.clone());
-        let actual3 = triangle.normal_at(Tuple::point(0.5, 0.25, 0.), intersection.clone());
+        let actual1 = triangle.normal_at(Tuple::point(0., 0.5, 0.), &intersection);
+        let actual2 = triangle.normal_at(Tuple::point(-0.5, 0.75, 0.), &intersection);
+        let actual3 = triangle.normal_at(Tuple::point(0.5, 0.25, 0.), &intersection);
 
         assert_eq!(expected, actual1);
         assert_eq!(expected, actual2);

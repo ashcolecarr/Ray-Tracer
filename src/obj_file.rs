@@ -98,12 +98,6 @@ pub fn parse_obj_file(data: String) -> Parser {
                         }
                     }
                 }
-                //match rec.parse() {
-                //    Ok(r) => points.push(r),
-                //    Err(_e) => {
-                //        continue 'outer;
-                //    }
-                //}
             }
 
             if contains_vertex_normal {

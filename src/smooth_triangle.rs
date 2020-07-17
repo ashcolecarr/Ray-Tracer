@@ -95,7 +95,7 @@ impl SmoothTriangle {
         vec![Intersection::intersection_with_uv(t, Shape::SmoothTriangle(self.clone()), u, v)]
     }
 
-    pub fn normal_at(&self, _world_point: Tuple, hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, hit: &Intersection) -> Tuple {
         let hit_u = hit.u.unwrap();
         let hit_v = hit.v.unwrap();
 
@@ -175,7 +175,7 @@ mod tests {
 
         let expected = Tuple::vector(-0.5547, 0.83205, 0.);
 
-        let actual = triangle.normal_at(ORIGIN, intersection);
+        let actual = triangle.normal_at(ORIGIN, &intersection);
 
         assert_eq!(expected, actual);
     }
@@ -186,7 +186,7 @@ mod tests {
         let intersection = Intersection::intersection_with_uv(1., triangle, 0.45, 0.25);
         let ray = Ray::new(Tuple::point(-0.2, 0.3, -2.), Tuple::vector(0., 0., 1.));
         let intersections = intersections!(intersection.clone());
-        let computations = intersection.prepare_computations(ray, intersections);
+        let computations = intersection.prepare_computations(ray, &intersections);
 
         let expected = Tuple::vector(-0.5547, 0.83205, 0.);
 

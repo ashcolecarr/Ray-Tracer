@@ -26,11 +26,11 @@ impl Canvas {
         self.pixels[y as usize * self.width as usize + x as usize] = color;
     }
 
-    pub fn pixel_at(self, x: u32, y: u32) -> Color {
+    pub fn pixel_at(&self, x: u32, y: u32) -> Color {
         self.pixels[y as usize * self.width as usize + x as usize]
     }
 
-    pub fn canvas_to_ppm(self) -> String {
+    pub fn canvas_to_ppm(&self) -> String {
         const MAX_COLOR: i32 = 255;
         let mut ppm_data = String::new();
 

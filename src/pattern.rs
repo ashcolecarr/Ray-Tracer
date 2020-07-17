@@ -14,13 +14,13 @@ pub enum Pattern {
 }
 
 pub trait PatternTrait {
-    fn pattern_at_shape(&self, object: Shape, world_point: Tuple) -> Color;
+    fn pattern_at_shape(&self, object: &Shape, world_point: Tuple) -> Color;
     fn get_transform(&self) -> Matrix;
-    fn set_transform(&mut self, transform: Matrix);
+    fn set_transform(&mut self, transform: &Matrix);
 }
 
 impl PatternTrait for Pattern {
-    fn pattern_at_shape(&self, object: Shape, world_point: Tuple) -> Color {
+    fn pattern_at_shape(&self, object: &Shape, world_point: Tuple) -> Color {
         let object_point = object.world_to_object(world_point);
         let pattern_point = self.get_transform().inverse().unwrap() * object_point;
 
@@ -45,14 +45,14 @@ impl PatternTrait for Pattern {
         }
     }
 
-    fn set_transform(&mut self, transform: Matrix) {
+    fn set_transform(&mut self, transform: &Matrix) {
         match self {
-            Pattern::Striped(striped) => striped.transform = transform,
-            Pattern::Gradient(gradient) => gradient.transform = transform,
-            Pattern::Ring(ring) => ring.transform = transform,
-            Pattern::Checkered(checkered) => checkered.transform = transform,
-            Pattern::RingGradient(ring_gradient) => ring_gradient.transform = transform,
-            Pattern::Test(test) => test.transform = transform,
+            Pattern::Striped(striped) => striped.transform = transform.clone(),
+            Pattern::Gradient(gradient) => gradient.transform = transform.clone(),
+            Pattern::Ring(ring) => ring.transform = transform.clone(),
+            Pattern::Checkered(checkered) => checkered.transform = transform.clone(),
+            Pattern::RingGradient(ring_gradient) => ring_gradient.transform = transform.clone(),
+            Pattern::Test(test) => test.transform = transform.clone(),
         }
     }
 }
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn assigning_transformation() {
         let mut pattern = Pattern::Test(TestPattern::new());
-        pattern.set_transform(translate(1., 2., 3.));
+        pattern.set_transform(&translate(1., 2., 3.));
 
         let expected = translate(1., 2., 3.);
 
@@ -277,12 +277,12 @@ mod tests {
     #[test]
     fn pattern_with_object_transformation() {
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(scale(2., 2., 2.));
+        shape.set_transform(&scale(2., 2., 2.));
         let pattern = Pattern::Test(TestPattern::new());
 
         let expected = Color::new(1., 1.5, 2.);
 
-        let actual = pattern.pattern_at_shape(shape, Tuple::point(2., 3., 4.));
+        let actual = pattern.pattern_at_shape(&shape, Tuple::point(2., 3., 4.));
 
         assert_eq!(expected, actual);
     }
@@ -291,11 +291,11 @@ mod tests {
     fn pattern_with_pattern_transformation() {
         let shape = Shape::Sphere(Sphere::new());
         let mut pattern = Pattern::Test(TestPattern::new());
-        pattern.set_transform(scale(2., 2., 2.));
+        pattern.set_transform(&scale(2., 2., 2.));
 
         let expected = Color::new(1., 1.5, 2.);
 
-        let actual = pattern.pattern_at_shape(shape, Tuple::point(2., 3., 4.));
+        let actual = pattern.pattern_at_shape(&shape, Tuple::point(2., 3., 4.));
 
         assert_eq!(expected, actual);
     }
@@ -303,13 +303,13 @@ mod tests {
     #[test]
     fn pattern_with_both_object_and_pattern_transformation() {
         let mut shape = Shape::Sphere(Sphere::new());
-        shape.set_transform(scale(2., 2., 2.));
+        shape.set_transform(&scale(2., 2., 2.));
         let mut pattern = Pattern::Test(TestPattern::new());
-        pattern.set_transform(translate(0.5, 1., 1.5));
+        pattern.set_transform(&translate(0.5, 1., 1.5));
 
         let expected = Color::new(0.75, 0.5, 0.25);
 
-        let actual = pattern.pattern_at_shape(shape, Tuple::point(2.5, 3., 3.5));
+        let actual = pattern.pattern_at_shape(&shape, Tuple::point(2.5, 3., 3.5));
 
         assert_eq!(expected, actual);
     }

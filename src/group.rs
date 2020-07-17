@@ -64,7 +64,7 @@ impl Group {
         vec![]
     }
 
-    pub fn normal_at(&self, _world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, _hit: &Intersection) -> Tuple {
         panic!("Normal at cannot be calculated on a group.")
     }
 
@@ -122,7 +122,7 @@ impl Group {
         (left, right)
     }
 
-    pub fn make_subgroup(&mut self, shapes: Vec<Shape>) {
+    pub fn make_subgroup(&mut self, shapes: &mut Vec<Shape>) {
         let mut subgroup = Shape::Group(Group::new());
         for mut shape in shapes {
             subgroup.add_child(&mut shape);
@@ -133,13 +133,13 @@ impl Group {
 
     pub fn divide(&mut self, threshold: usize) {
         if threshold <= self.shapes.len() {
-            let (left, right) = self.partition_children();
+            let (mut left, mut right) = self.partition_children();
             if !left.is_empty() {
-                self.make_subgroup(left);
+                self.make_subgroup(&mut left);
             }
 
             if !right.is_empty() {
-                self.make_subgroup(right);
+                self.make_subgroup(&mut right);
             }
         }
 
@@ -203,9 +203,9 @@ mod tests {
         let mut group = Group::new();
         let sphere1 = Shape::Sphere(Sphere::new());
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(translate(0., 0., -3.));
+        sphere2.set_transform(&translate(0., 0., -3.));
         let mut sphere3 = Shape::Sphere(Sphere::new());
-        sphere3.set_transform(translate(5., 0., 0.));
+        sphere3.set_transform(&translate(5., 0., 0.));
         group.shapes.push(sphere1.clone());
         group.shapes.push(sphere2.clone());
         group.shapes.push(sphere3.clone());
@@ -227,9 +227,9 @@ mod tests {
     #[test]
     fn intersecting_transformed_group() {
         let mut group = Shape::Group(Group::new());
-        group.set_transform(scale(2., 2., 2.));
+        group.set_transform(&scale(2., 2., 2.));
         let mut sphere = Shape::Sphere(Sphere::new());
-        sphere.set_transform(translate(5., 0., 0.));
+        sphere.set_transform(&translate(5., 0., 0.));
         group.add_child(&mut sphere);
         let ray = Ray::new(Tuple::point(10., 0., -10.), Tuple::vector(0., 0., 1.));
 
@@ -243,11 +243,11 @@ mod tests {
     #[test]
     fn group_has_bounding_box_that_contains_its_children() {
         let mut sphere = Shape::Sphere(Sphere::new());
-        sphere.set_transform(translate(2., 5., -3.) * scale(2., 2., 2.));
+        sphere.set_transform(&(translate(2., 5., -3.) * scale(2., 2., 2.)));
         let mut cylinder = Shape::Cylinder(Cylinder::new());
         cylinder.set_minimum(-2.);
         cylinder.set_maximum(2.);
-        cylinder.set_transform(translate(-4., -1., 4.) * scale(0.5, 1., 0.5));
+        cylinder.set_transform(&(translate(-4., -1., 4.) * scale(0.5, 1., 0.5)));
         let mut shape = Shape::Group(Group::new());
         shape.add_child(&mut sphere);
         shape.add_child(&mut cylinder);
@@ -302,9 +302,9 @@ mod tests {
     #[test]
     fn partitioning_groups_children() {
         let mut sphere1 = Shape::Sphere(Sphere::new());
-        sphere1.set_transform(translate(-2., 0., 0.));
+        sphere1.set_transform(&translate(-2., 0., 0.));
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(translate(2., 0., 0.));
+        sphere2.set_transform(&translate(2., 0., 0.));
         let mut sphere3 = Shape::Sphere(Sphere::new());
         let mut group = Shape::Group(Group::new());
         group.add_child(&mut sphere1);
@@ -333,7 +333,7 @@ mod tests {
 
         let expected_group = vec![sphere1.clone(), sphere2.clone()];
 
-        group.make_subgroup(vec![sphere1, sphere2]);
+        group.make_subgroup(&mut vec![sphere1, sphere2]);
 
         let actual_group = if let Shape::Group(group) = group { group } else { panic!("") };
 
@@ -344,11 +344,11 @@ mod tests {
     #[test]
     fn subdividing_groups_partitions_its_children() {
         let mut sphere1 = Shape::Sphere(Sphere::new());
-        sphere1.set_transform(translate(-2., -2., 0.));
+        sphere1.set_transform(&translate(-2., -2., 0.));
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(translate(-2., 2., 0.));
+        sphere2.set_transform(&translate(-2., 2., 0.));
         let mut sphere3 = Shape::Sphere(Sphere::new());
-        sphere3.set_transform(scale(4., 4., 4.));
+        sphere3.set_transform(&scale(4., 4., 4.));
         let mut group = Shape::Group(Group::new());
         group.add_child(&mut sphere1);
         group.add_child(&mut sphere2);
@@ -375,11 +375,11 @@ mod tests {
     #[test]
     fn subdividing_group_with_too_few_children() {
         let mut sphere1 = Shape::Sphere(Sphere::new());
-        sphere1.set_transform(translate(-2., 0., 0.));
+        sphere1.set_transform(&translate(-2., 0., 0.));
         let mut sphere2 = Shape::Sphere(Sphere::new());
-        sphere2.set_transform(translate(2., 1., 0.));
+        sphere2.set_transform(&translate(2., 1., 0.));
         let mut sphere3 = Shape::Sphere(Sphere::new());
-        sphere3.set_transform(translate(2., -1., 0.));
+        sphere3.set_transform(&translate(2., -1., 0.));
         let mut subgroup = Shape::Group(Group::new());
         subgroup.add_child(&mut sphere1);
         subgroup.add_child(&mut sphere2);

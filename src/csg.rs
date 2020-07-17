@@ -70,10 +70,10 @@ impl CSG {
         let mut intersections = [left_intersections, right_intersections].concat();
         intersections.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
 
-        self.filter_intersections(intersections)
+        self.filter_intersections(&intersections)
     }
 
-    pub fn normal_at(&self, _world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, _world_point: Tuple, _hit: &Intersection) -> Tuple {
         panic!("Normal at cannot be calculated on a csg.")
     }
 
@@ -103,16 +103,16 @@ impl CSG {
         }
     }
 
-    pub fn filter_intersections(&self, intersections: Vec<Intersection>) -> Vec<Intersection> {
+    pub fn filter_intersections(&self, intersections: &Vec<Intersection>) -> Vec<Intersection> {
         let mut inside_left_hit = false;
         let mut inside_right_hit = false;
         let mut result: Vec<Intersection> = vec![];
 
         for intersection in intersections {
-            let left_hit = self.left.includes(intersection.object.clone());
+            let left_hit = self.left.includes(&intersection.object);
 
             if CSG::intersection_allowed(self.operation.clone(), left_hit, inside_left_hit, inside_right_hit) {
-                result.push(intersection);
+                result.push(intersection.clone());
             }
 
             if left_hit {
@@ -231,7 +231,7 @@ mod tests {
 
         for expected in expecteds {
             let csg_shape = CSG::new(String::from(expected.0), &mut shape1, &mut shape2);
-            let actual = csg_shape.filter_intersections(intersections.clone());
+            let actual = csg_shape.filter_intersections(&intersections);
 
             assert_eq!(2, actual.len());
             assert_eq!(intersections[expected.1], actual[0]);
@@ -255,7 +255,7 @@ mod tests {
     fn ray_hits_csg_object() {
         let mut shape1 = Shape::Sphere(Sphere::new());
         let mut shape2 = Shape::Cube(Cube::new());
-        shape2.set_transform(translate(0., 0., 0.5));
+        shape2.set_transform(&translate(0., 0., 0.5));
         let csg = CSG::new(String::from("union"), &mut shape1, &mut shape2);
         let ray = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
 

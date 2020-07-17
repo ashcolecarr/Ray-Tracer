@@ -130,10 +130,10 @@ pub fn draw_circle() {
             let ray = Ray::new(ray_origin, (position - ray_origin).normalize());
             let intersections = shape.intersect(ray);
 
-            let hit = Intersection::hit(intersections.clone());
+            let hit = Intersection::hit(&intersections);
             if hit.is_some() {
                 let point = ray.position(hit.clone().unwrap().t);
-                let normal = hit.clone().unwrap().object.normal_at(point, intersections[0].clone());
+                let normal = hit.clone().unwrap().object.normal_at(point, &intersections[0]);
                 let eye = -ray.direction;
 
                 let material = hit.unwrap().object.get_material();
@@ -283,7 +283,7 @@ pub fn draw_room_scene() {
     floor_material.specular = 0.;
     floor_material.shininess = 50.;
     let mut floor = Shape::Plane(Plane::new());
-    floor.set_material(floor_material);
+    floor.set_material(&floor_material);
 
     let mut wall_material: Material = Default::default();
     wall_material.ambient = 0.1;
@@ -293,34 +293,34 @@ pub fn draw_room_scene() {
     wall_material.color = Color::new(0., 1., 1.);
 
     let mut north_wall = Shape::Plane(Plane::new());
-    north_wall.set_material(wall_material.clone());
-    north_wall.set_transform(translate(0., 0., 2.) * rotate(PI / 2., Axis::X));
+    north_wall.set_material(&wall_material);
+    north_wall.set_transform(&(translate(0., 0., 2.) * rotate(PI / 2., Axis::X)));
     
     let mut south_wall = Shape::Plane(Plane::new());
-    south_wall.set_material(wall_material.clone());
-    south_wall.set_transform(translate(0., 0., -2.) * rotate(PI / 2., Axis::X));
+    south_wall.set_material(&wall_material);
+    south_wall.set_transform(&(translate(0., 0., -2.) * rotate(PI / 2., Axis::X)));
 
     let mut northeast_wall = Shape::Plane(Plane::new());
-    northeast_wall.set_material(wall_material.clone());
-    northeast_wall.set_transform(translate(0., 0., 3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+    northeast_wall.set_material(&wall_material);
+    northeast_wall.set_transform(&(translate(0., 0., 3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X)));
 
     let mut southeast_wall = Shape::Plane(Plane::new());
-    southeast_wall.set_material(wall_material.clone());
-    southeast_wall.set_transform(translate(0., 0., -3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+    southeast_wall.set_material(&wall_material);
+    southeast_wall.set_transform(&(translate(0., 0., -3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X)));
 
     let mut northwest_wall = Shape::Plane(Plane::new());
-    northwest_wall.set_material(wall_material.clone());
-    northwest_wall.set_transform(translate(0., 0., 3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+    northwest_wall.set_material(&wall_material);
+    northwest_wall.set_transform(&(translate(0., 0., 3.) * rotate(-PI / 4., Axis::Y) * rotate(PI / 2., Axis::X)));
 
     let mut southwest_wall = Shape::Plane(Plane::new());
-    southwest_wall.set_material(wall_material.clone());
-    southwest_wall.set_transform(translate(0., 0., -3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X));
+    southwest_wall.set_material(&wall_material);
+    southwest_wall.set_transform(&(translate(0., 0., -3.) * rotate(PI / 4., Axis::Y) * rotate(PI / 2., Axis::X)));
 
     let mut sphere_material: Material = Default::default();
     sphere_material.color = Color::new(0.8, 0.4, 0.);
     let mut sphere = Shape::Sphere(Sphere::new());
-    sphere.set_material(sphere_material);
-    sphere.set_transform(translate(0., 1., 0.) * scale(1., 1., 1.));
+    sphere.set_material(&sphere_material);
+    sphere.set_transform(&(translate(0., 1., 0.) * scale(1., 1., 1.)));
     
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), WHITE));
@@ -346,15 +346,15 @@ pub fn draw_pattern() {
     let mut plane_material: Material = Default::default();
     plane_material.pattern = Some(plane_pattern);
     let mut plane = Shape::Plane(Plane::new());
-    plane.set_material(plane_material);
+    plane.set_material(&plane_material);
 
     let mut sphere_pattern = Pattern::Ring(RingPattern::new(Color::new(0.5, 0.4, 0.), Color::new(1.0, 0.8, 0.)));
-    sphere_pattern.set_transform(translate(0., 0., -1.) * scale(0.125, 0.125, 0.125));
+    sphere_pattern.set_transform(&(translate(0., 0., -1.) * scale(0.125, 0.125, 0.125)));
     let mut sphere_material: Material = Default::default();
     sphere_material.pattern = Some(sphere_pattern);
     let mut sphere = Shape::Sphere(Sphere::new());
-    sphere.set_material(sphere_material);
-    sphere.set_transform(translate(0., 3., 0.) * scale(2., 2., 2.));
+    sphere.set_material(&sphere_material);
+    sphere.set_transform(&(translate(0., 3., 0.) * scale(2., 2., 2.)));
 
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
@@ -374,20 +374,20 @@ pub fn draw_reflective_scene() {
     let mut plane_material: Material = Default::default();
     plane_material.pattern = Some(plane_pattern);
     let mut plane = Shape::Plane(Plane::new());
-    plane.set_material(plane_material);
+    plane.set_material(&plane_material);
 
     let mut sphere_material: Material = Default::default();
     sphere_material.color = Color::new(0.2, 0.6, 1.);
     sphere_material.reflective = 0.5;
     let mut sphere = Shape::Sphere(Sphere::new());
-    sphere.set_material(sphere_material);
-    sphere.set_transform(translate(0., 3., 0.) * scale(2., 2., 2.));
+    sphere.set_material(&sphere_material);
+    sphere.set_transform(&(translate(0., 3., 0.) * scale(2., 2., 2.)));
 
     let mut sphere2_material: Material = Default::default();
     sphere2_material.color = Color::new(1., 0.6, 0.6);
     let mut sphere2 = Shape::Sphere(Sphere::new());
-    sphere2.set_material(sphere2_material);
-    sphere2.set_transform(translate(2., 2., -2.) * scale(0.7, 0.7, 0.7));
+    sphere2.set_material(&sphere2_material);
+    sphere2.set_transform(&(translate(2., 2., -2.) * scale(0.7, 0.7, 0.7)));
 
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(-10., 10., -10.), WHITE));
@@ -405,23 +405,23 @@ pub fn draw_reflective_scene() {
 
 pub fn draw_glass_ball() {
     let mut plane_pattern = Pattern::Checkered(CheckeredPattern::new(WHITE, BLACK));
-    plane_pattern.set_transform(translate(0., 0.1, 0.));
+    plane_pattern.set_transform(&translate(0., 0.1, 0.));
     let plane_material = Material::new().with_pattern(plane_pattern);
     let mut plane = Shape::Plane(Plane::new());
-    plane.set_material(plane_material);
-    plane.set_transform(translate(0., -10.1, 0.));
+    plane.set_material(&plane_material);
+    plane.set_transform(&translate(0., -10.1, 0.));
 
     let glass = Material::new().with_diffuse(0.1).with_shininess(300.)
         .with_reflective(1.).with_refractive_index(1.52).with_transparency(1.);
     let mut glass_ball = Shape::Sphere(Sphere::glass_sphere());
-    glass_ball.set_material(glass);
+    glass_ball.set_material(&glass);
     glass_ball.set_casts_shadow(false);
 
     let air = Material::new().with_diffuse(0.1).with_shininess(300.)
         .with_reflective(1.).with_refractive_index(1.).with_transparency(1.);
     let mut air_bubble = Shape::Sphere(Sphere::new());
-    air_bubble.set_material(air);
-    air_bubble.set_transform(scale(0.5, 0.5, 0.5));
+    air_bubble.set_material(&air);
+    air_bubble.set_transform(&scale(0.5, 0.5, 0.5));
 
     let mut world = World::new();
     world.lights.push(Light::point_light(Tuple::point(20., 10., 0.), Color::new(0.7, 0.7, 0.7)));
@@ -443,85 +443,85 @@ pub fn draw_reflection_refraction() {
 
     let floor_pattern = Pattern::Checkered(CheckeredPattern::new(Color::new(0.35, 0.35, 0.35), Color::new(0.65, 0.65, 0.65)));
     let mut floor = Shape::Plane(Plane::new());
-    floor.set_transform(rotate(0.31415, Axis::Y));
-    floor.set_material(Material::new().with_pattern(floor_pattern)
+    floor.set_transform(&rotate(0.31415, Axis::Y));
+    floor.set_material(&Material::new().with_pattern(floor_pattern)
         .with_specular(0.).with_reflective(0.4));
     world.objects.push(floor);
 
     let mut ceiling = Shape::Plane(Plane::new());
-    ceiling.set_transform(translate(0., 5., 0.));
-    ceiling.set_material(Material::new().with_color(Color::new(0.8, 0.8, 0.8))
+    ceiling.set_transform(&translate(0., 5., 0.));
+    ceiling.set_material(&Material::new().with_color(Color::new(0.8, 0.8, 0.8))
         .with_ambient(0.3).with_specular(0.));
     world.objects.push(ceiling);
 
     let mut wall_pattern = Pattern::Striped(StripedPattern::new(Color::new(0.45, 0.45, 0.45), Color::new(0.55, 0.55, 0.55)));
-    wall_pattern.set_transform(rotate(1.5708, Axis::Y) * scale(0.25, 0.25, 0.25));
+    wall_pattern.set_transform(&(rotate(1.5708, Axis::Y) * scale(0.25, 0.25, 0.25)));
     let wall_material = Material::new().with_pattern(wall_pattern)
         .with_ambient(0.).with_diffuse(0.4).with_specular(0.).with_reflective(0.3);
 
     let mut west_wall = Shape::Plane(Plane::new());
-    west_wall.set_transform(translate(-5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y));
-    west_wall.set_material(wall_material.clone());
+    west_wall.set_transform(&(translate(-5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y)));
+    west_wall.set_material(&wall_material);
     world.objects.push(west_wall);
 
     let mut east_wall = Shape::Plane(Plane::new());
-    east_wall.set_transform(translate(5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y));
-    east_wall.set_material(wall_material.clone());
+    east_wall.set_transform(&(translate(5., 0., 0.) * rotate(1.5708, Axis::Z) * rotate(1.5708, Axis::Y)));
+    east_wall.set_material(&wall_material);
     world.objects.push(east_wall);
 
     let mut north_wall = Shape::Plane(Plane::new());
-    north_wall.set_transform(translate(0., 0., 5.) * rotate(1.5708, Axis::X));
-    north_wall.set_material(wall_material.clone());
+    north_wall.set_transform(&(translate(0., 0., 5.) * rotate(1.5708, Axis::X)));
+    north_wall.set_material(&wall_material);
     world.objects.push(north_wall);
     
     let mut south_wall = Shape::Plane(Plane::new());
-    south_wall.set_transform(translate(0., 0., -5.) * rotate(1.5708, Axis::X));
-    south_wall.set_material(wall_material.clone());
+    south_wall.set_transform(&(translate(0., 0., -5.) * rotate(1.5708, Axis::X)));
+    south_wall.set_material(&wall_material);
     world.objects.push(south_wall);
 
     // Background spheres
     let mut background_sphere1 = Shape::Sphere(Sphere::new());
-    background_sphere1.set_transform(translate(4.6, 0.4, 1.) * scale(0.4, 0.4, 0.4));
-    background_sphere1.set_material(Material::new()
+    background_sphere1.set_transform(&(translate(4.6, 0.4, 1.) * scale(0.4, 0.4, 0.4)));
+    background_sphere1.set_material(&Material::new()
         .with_color(Color::new(0.8, 0.5, 0.3)).with_shininess(50.));
     world.objects.push(background_sphere1);
 
     let mut background_sphere2 = Shape::Sphere(Sphere::new());
-    background_sphere2.set_transform(translate(4.7, 0.3, 0.4) * scale(0.3, 0.3, 0.3));
-    background_sphere2.set_material(Material::new()
+    background_sphere2.set_transform(&(translate(4.7, 0.3, 0.4) * scale(0.3, 0.3, 0.3)));
+    background_sphere2.set_material(&Material::new()
         .with_color(Color::new(0.9, 0.4, 0.5)).with_shininess(50.));
     world.objects.push(background_sphere2);
 
     let mut background_sphere3 = Shape::Sphere(Sphere::new());
-    background_sphere3.set_transform(translate(-1., 0.5, 4.5) * scale(0.5, 0.5, 0.5));
-    background_sphere3.set_material(Material::new()
+    background_sphere3.set_transform(&(translate(-1., 0.5, 4.5) * scale(0.5, 0.5, 0.5)));
+    background_sphere3.set_material(&Material::new()
         .with_color(Color::new(0.4, 0.9, 0.6)).with_shininess(50.));
     world.objects.push(background_sphere3);
 
     let mut background_sphere4 = Shape::Sphere(Sphere::new());
-    background_sphere4.set_transform(translate(-1.7, 0.3, 4.7) * scale(0.3, 0.3, 0.3));
-    background_sphere4.set_material(Material::new()
+    background_sphere4.set_transform(&(translate(-1.7, 0.3, 4.7) * scale(0.3, 0.3, 0.3)));
+    background_sphere4.set_material(&Material::new()
         .with_color(Color::new(0.4, 0.6, 0.9)).with_shininess(50.));
     world.objects.push(background_sphere4);
 
     // Foreground spheres
     let mut red_sphere = Shape::Sphere(Sphere::new());
-    red_sphere.set_transform(translate(-0.6, 1., 0.6));
-    red_sphere.set_material(Material::new().with_color(Color::new(1., 0.3, 0.2))
+    red_sphere.set_transform(&translate(-0.6, 1., 0.6));
+    red_sphere.set_material(&Material::new().with_color(Color::new(1., 0.3, 0.2))
         .with_specular(0.4).with_shininess(5.));
     world.objects.push(red_sphere);
 
     let mut blue_glass_sphere = Shape::Sphere(Sphere::new());
-    blue_glass_sphere.set_transform(translate(0.6, 0.7, -0.6) * scale(0.7, 0.7, 0.7));
-    blue_glass_sphere.set_material(Material::new().with_color(Color::new(0., 0., 0.2))
+    blue_glass_sphere.set_transform(&((translate(0.6, 0.7, -0.6) * scale(0.7, 0.7, 0.7))));
+    blue_glass_sphere.set_material(&Material::new().with_color(Color::new(0., 0., 0.2))
         .with_ambient(0.).with_diffuse(0.4).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.9)
         .with_transparency(0.9).with_refractive_index(1.5));
     world.objects.push(blue_glass_sphere);
 
     let mut green_glass_sphere = Shape::Sphere(Sphere::new());
-    green_glass_sphere.set_transform(translate(-0.7, 0.5, -0.8) * scale(0.5, 0.5, 0.5));
-    green_glass_sphere.set_material(Material::new().with_color(Color::new(0., 0.2, 0.))
+    green_glass_sphere.set_transform(&(translate(-0.7, 0.5, -0.8) * scale(0.5, 0.5, 0.5)));
+    green_glass_sphere.set_material(&Material::new().with_color(Color::new(0., 0.2, 0.))
         .with_ambient(0.).with_diffuse(0.4).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.9)
         .with_transparency(0.9).with_refractive_index(1.5));
@@ -541,124 +541,124 @@ pub fn draw_table_scene() {
 
     let mut floors_pattern = Pattern::Checkered(
         CheckeredPattern::new(BLACK, Color::new(0.25, 0.25, 0.25)));
-    floors_pattern.set_transform(scale(0.07, 0.07, 0.07));
+    floors_pattern.set_transform(&(scale(0.07, 0.07, 0.07)));
     let mut floors = Shape::Cube(Cube::new());
-    floors.set_transform(scale(20., 7., 20.) * translate(0., 1., 0.));
-    floors.set_material(Material::new().with_pattern(floors_pattern)
+    floors.set_transform(&(scale(20., 7., 20.) * translate(0., 1., 0.)));
+    floors.set_material(&Material::new().with_pattern(floors_pattern)
         .with_ambient(0.25).with_diffuse(0.7).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.1));
     world.objects.push(floors);
 
     let mut walls_pattern = Pattern::Checkered(
         CheckeredPattern::new(Color::new(0.4863, 0.3765, 0.2941), Color::new(0.3725, 0.2902, 0.2275)));
-    walls_pattern.set_transform(scale(0.05, 20., 0.05));
+    walls_pattern.set_transform(&(scale(0.05, 20., 0.05)));
     let mut walls = Shape::Cube(Cube::new());
-    walls.set_transform(scale(10., 10., 10.));
-    walls.set_material(Material::new().with_pattern(walls_pattern)
+    walls.set_transform(&(scale(10., 10., 10.)));
+    walls.set_material(&Material::new().with_pattern(walls_pattern)
         .with_ambient(0.1).with_diffuse(0.7).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.1));
     world.objects.push(walls);
 
     let mut table_pattern = Pattern::Striped(
         StripedPattern::new(Color::new(0.5529, 0.4235, 0.3255), Color::new(0.6588, 0.5098, 0.4)));
-    table_pattern.set_transform(scale(0.05, 0.05, 0.05) * rotate(0.1, Axis::Y));
+    table_pattern.set_transform(&(scale(0.05, 0.05, 0.05) * rotate(0.1, Axis::Y)));
     let mut table_top = Shape::Cube(Cube::new());
-    table_top.set_transform(translate(0., 3.1, 0.) * scale(3., 0.1, 2.));
-    table_top.set_material(Material::new().with_pattern(table_pattern)
+    table_top.set_transform(&(translate(0., 3.1, 0.) * scale(3., 0.1, 2.)));
+    table_top.set_material(&Material::new().with_pattern(table_pattern)
         .with_ambient(0.1).with_diffuse(0.7).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.2));
     world.objects.push(table_top);
 
     let mut table_leg1 = Shape::Cube(Cube::new());
-    table_leg1.set_transform(translate(2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1));
-    table_leg1.set_material(Material::new()
+    table_leg1.set_transform(&(translate(2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1)));
+    table_leg1.set_material(&Material::new()
         .with_color(Color::new(0.5529, 0.4235, 0.3255))
         .with_ambient(0.2).with_diffuse(0.7));
     world.objects.push(table_leg1);
 
     let mut table_leg2 = Shape::Cube(Cube::new());
-    table_leg2.set_transform(translate(2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1));
-    table_leg2.set_material(Material::new()
+    table_leg2.set_transform(&(translate(2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1)));
+    table_leg2.set_material(&Material::new()
         .with_color(Color::new(0.5529, 0.4235, 0.3255))
         .with_ambient(0.2).with_diffuse(0.7));
     world.objects.push(table_leg2);
 
     let mut table_leg3 = Shape::Cube(Cube::new());
-    table_leg3.set_transform(translate(-2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1));
-    table_leg3.set_material(Material::new()
+    table_leg3.set_transform(&(translate(-2.7, 1.5, -1.7) * scale(0.1, 1.5, 0.1)));
+    table_leg3.set_material(&Material::new()
         .with_color(Color::new(0.5529, 0.4235, 0.3255))
         .with_ambient(0.2).with_diffuse(0.7));
     world.objects.push(table_leg3);
 
     let mut table_leg4 = Shape::Cube(Cube::new());
-    table_leg4.set_transform(translate(-2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1));
-    table_leg4.set_material(Material::new()
+    table_leg4.set_transform(&(translate(-2.7, 1.5, 1.7) * scale(0.1, 1.5, 0.1)));
+    table_leg4.set_material(&Material::new()
         .with_color(Color::new(0.5529, 0.4235, 0.3255))
         .with_ambient(0.2).with_diffuse(0.7));
     world.objects.push(table_leg4);
     
     let mut glass_cube = Shape::Cube(Cube::new());
-    glass_cube.set_transform(translate(0., 3.45001, 0.) * rotate(0.2, Axis::Y) * scale(0.25, 0.25, 0.25));
+    glass_cube.set_transform(&(translate(0., 3.45001, 0.) * rotate(0.2, Axis::Y) * scale(0.25, 0.25, 0.25)));
     glass_cube.set_casts_shadow(false);
-    glass_cube.set_material(Material::new().with_color(Color::new(1., 1., 0.8))
+    glass_cube.set_material(&Material::new().with_color(Color::new(1., 1., 0.8))
         .with_ambient(0.).with_diffuse(0.3).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.7).with_transparency(0.7)
         .with_refractive_index(1.5));
     world.objects.push(glass_cube);
 
     let mut little_cube1 = Shape::Cube(Cube::new());
-    little_cube1.set_transform(translate(1., 3.35, -0.9) * rotate(-0.4, Axis::Y) * scale(0.15, 0.15, 0.15));
-    little_cube1.set_material(Material::new().with_color(Color::new(1., 0.5, 0.5))
+    little_cube1.set_transform(&(translate(1., 3.35, -0.9) * rotate(-0.4, Axis::Y) * scale(0.15, 0.15, 0.15)));
+    little_cube1.set_material(&Material::new().with_color(Color::new(1., 0.5, 0.5))
         .with_reflective(0.6).with_diffuse(0.3));
     world.objects.push(little_cube1);
 
     let mut little_cube2 = Shape::Cube(Cube::new());
-    little_cube2.set_transform(translate(-1.5, 3.27, 0.3) * rotate(0.4, Axis::Y) * scale(0.15, 0.07, 0.15));
-    little_cube2.set_material(Material::new().with_color(Color::new(1., 1., 0.5)));
+    little_cube2.set_transform(&(translate(-1.5, 3.27, 0.3) * rotate(0.4, Axis::Y) * scale(0.15, 0.07, 0.15)));
+    little_cube2.set_material(&Material::new().with_color(Color::new(1., 1., 0.5)));
     world.objects.push(little_cube2);
 
     let mut little_cube3 = Shape::Cube(Cube::new());
-    little_cube3.set_transform(translate(0., 3.25, 1.) * rotate(0.4, Axis::Y) * scale(0.2, 0.05, 0.05));
-    little_cube3.set_material(Material::new().with_color(Color::new(0.5, 1., 0.5)));
+    little_cube3.set_transform(&(translate(0., 3.25, 1.) * rotate(0.4, Axis::Y) * scale(0.2, 0.05, 0.05)));
+    little_cube3.set_material(&Material::new().with_color(Color::new(0.5, 1., 0.5)));
     world.objects.push(little_cube3);
 
     let mut little_cube4 = Shape::Cube(Cube::new());
-    little_cube4.set_transform(translate(-0.6, 3.4, -1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05));
-    little_cube4.set_material(Material::new().with_color(Color::new(0.5, 0.5, 1.)));
+    little_cube4.set_transform(&(translate(-0.6, 3.4, -1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05)));
+    little_cube4.set_material(&Material::new().with_color(Color::new(0.5, 0.5, 1.)));
     world.objects.push(little_cube4);
 
     let mut little_cube5 = Shape::Cube(Cube::new());
-    little_cube5.set_transform(translate(2., 3.4, 1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05));
-    little_cube5.set_material(Material::new().with_color(Color::new(0.5, 1., 1.)));
+    little_cube5.set_transform(&(translate(2., 3.4, 1.) * rotate(0.8, Axis::Y) * scale(0.05, 0.2, 0.05)));
+    little_cube5.set_material(&Material::new().with_color(Color::new(0.5, 1., 1.)));
     world.objects.push(little_cube5);
 
     let mut frame1 = Shape::Cube(Cube::new());
-    frame1.set_transform(translate(-10., 4., 1.) * scale(0.05, 1., 1.));
-    frame1.set_material(Material::new().with_color(Color::new(0.7098, 0.2471, 0.2196))
+    frame1.set_transform(&(translate(-10., 4., 1.) * scale(0.05, 1., 1.)));
+    frame1.set_material(&Material::new().with_color(Color::new(0.7098, 0.2471, 0.2196))
         .with_diffuse(0.6));
     world.objects.push(frame1);
 
     let mut frame2 = Shape::Cube(Cube::new());
-    frame2.set_transform(translate(-10., 3.4, 2.7) * scale(0.05, 0.4, 0.4));
-    frame2.set_material(Material::new().with_color(Color::new(0.2667, 0.2706, 0.6902))
+    frame2.set_transform(&(translate(-10., 3.4, 2.7) * scale(0.05, 0.4, 0.4)));
+    frame2.set_material(&Material::new().with_color(Color::new(0.2667, 0.2706, 0.6902))
         .with_diffuse(0.6));
     world.objects.push(frame2);
 
     let mut frame3 = Shape::Cube(Cube::new());
-    frame3.set_transform(translate(-10., 4.6, 2.7) * scale(0.05, 0.4, 0.4));
-    frame3.set_material(Material::new().with_color(Color::new(0.3098, 0.5961, 0.3098))
+    frame3.set_transform(&(translate(-10., 4.6, 2.7) * scale(0.05, 0.4, 0.4)));
+    frame3.set_material(&Material::new().with_color(Color::new(0.3098, 0.5961, 0.3098))
         .with_diffuse(0.6));
     world.objects.push(frame3);
 
     let mut mirror_frame = Shape::Cube(Cube::new());
-    mirror_frame.set_transform(translate(-2., 3.5, 9.95) * scale(5., 1.5, 0.05));
-    mirror_frame.set_material(Material::new().with_color(Color::new(0.3882, 0.2627, 0.1882))
+    mirror_frame.set_transform(&(translate(-2., 3.5, 9.95) * scale(5., 1.5, 0.05)));
+    mirror_frame.set_material(&Material::new().with_color(Color::new(0.3882, 0.2627, 0.1882))
         .with_diffuse(0.7));
     world.objects.push(mirror_frame);
 
     let mut mirror = Shape::Cube(Cube::new());
-    mirror.set_transform(translate(-2., 3.5, 9.95) * scale(4.8, 1.4, 0.06));
-    mirror.set_material(Material::new().with_color(BLACK).with_diffuse(0.)
+    mirror.set_transform(&(translate(-2., 3.5, 9.95) * scale(4.8, 1.4, 0.06)));
+    mirror.set_material(&Material::new().with_color(BLACK).with_diffuse(0.)
         .with_ambient(0.).with_specular(1.).with_shininess(300.).with_reflective(1.));
     world.objects.push(mirror);
 
@@ -676,9 +676,9 @@ pub fn draw_cylinder_scene() {
 
     let mut floor_pattern = Pattern::Checkered(
         CheckeredPattern::new(Color::new(0.5, 0.5, 0.5), Color::new(0.75, 0.75, 0.75)));
-    floor_pattern.set_transform(rotate(0.3, Axis::Y) * scale(0.25, 0.25, 0.25));
+    floor_pattern.set_transform(&(rotate(0.3, Axis::Y) * scale(0.25, 0.25, 0.25)));
     let mut floor = Shape::Plane(Plane::new());
-    floor.set_material(Material::new().with_pattern(floor_pattern)
+    floor.set_material(&Material::new().with_pattern(floor_pattern)
         .with_ambient(0.2).with_diffuse(0.9).with_specular(0.));
     world.objects.push(floor);
 
@@ -686,8 +686,8 @@ pub fn draw_cylinder_scene() {
     cylinder1.set_minimum(0.);
     cylinder1.set_maximum(0.75);
     cylinder1.set_closed(true);
-    cylinder1.set_transform(translate(-1., 0., 1.) * scale(0.5, 1., 0.5));
-    cylinder1.set_material(Material::new().with_color(Color::new(0., 0., 0.6))
+    cylinder1.set_transform(&(translate(-1., 0., 1.) * scale(0.5, 1., 0.5)));
+    cylinder1.set_material(&Material::new().with_color(Color::new(0., 0., 0.6))
         .with_diffuse(0.1).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.9));
     world.objects.push(cylinder1);
@@ -697,8 +697,8 @@ pub fn draw_cylinder_scene() {
     cylinder2.set_minimum(0.);
     cylinder2.set_maximum(0.2);
     cylinder2.set_closed(false);
-    cylinder2.set_transform(translate(1., 0., 0.) * scale(0.8, 1., 0.8));
-    cylinder2.set_material(Material::new().with_color(Color::new(1., 1., 0.3))
+    cylinder2.set_transform(&(translate(1., 0., 0.) * scale(0.8, 1., 0.8)));
+    cylinder2.set_material(&Material::new().with_color(Color::new(1., 1., 0.3))
         .with_ambient(0.1).with_diffuse(0.8)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder2);
@@ -707,8 +707,8 @@ pub fn draw_cylinder_scene() {
     cylinder3.set_minimum(0.);
     cylinder3.set_maximum(0.3);
     cylinder3.set_closed(false);
-    cylinder3.set_transform(translate(1., 0., 0.) * scale(0.6, 1., 0.6));
-    cylinder3.set_material(Material::new().with_color(Color::new(1., 0.9, 0.4))
+    cylinder3.set_transform(&(translate(1., 0., 0.) * scale(0.6, 1., 0.6)));
+    cylinder3.set_material(&Material::new().with_color(Color::new(1., 0.9, 0.4))
         .with_ambient(0.1).with_diffuse(0.8)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder3);
@@ -717,8 +717,8 @@ pub fn draw_cylinder_scene() {
     cylinder4.set_minimum(0.);
     cylinder4.set_maximum(0.4);
     cylinder4.set_closed(false);
-    cylinder4.set_transform(translate(1., 0., 0.) * scale(0.4, 1., 0.4));
-    cylinder4.set_material(Material::new().with_color(Color::new(1., 0.8, 0.5))
+    cylinder4.set_transform(&(translate(1., 0., 0.) * scale(0.4, 1., 0.4)));
+    cylinder4.set_material(&Material::new().with_color(Color::new(1., 0.8, 0.5))
         .with_ambient(0.1).with_diffuse(0.8)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder4);
@@ -727,8 +727,8 @@ pub fn draw_cylinder_scene() {
     cylinder5.set_minimum(0.);
     cylinder5.set_maximum(0.5);
     cylinder5.set_closed(true);
-    cylinder5.set_transform(translate(1., 0., 0.) * scale(0.2, 1., 0.2));
-    cylinder5.set_material(Material::new().with_color(Color::new(1., 0.7, 0.6))
+    cylinder5.set_transform(&(translate(1., 0., 0.) * scale(0.2, 1., 0.2)));
+    cylinder5.set_material(&Material::new().with_color(Color::new(1., 0.7, 0.6))
         .with_ambient(0.1).with_diffuse(0.8)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder5);
@@ -738,8 +738,8 @@ pub fn draw_cylinder_scene() {
     cylinder6.set_minimum(0.);
     cylinder6.set_maximum(0.3);
     cylinder6.set_closed(true);
-    cylinder6.set_transform(translate(0., 0., -0.75) * scale(0.05, 1., 0.05));
-    cylinder6.set_material(Material::new().with_color(Color::new(1., 0., 0.))
+    cylinder6.set_transform(&(translate(0., 0., -0.75) * scale(0.05, 1., 0.05)));
+    cylinder6.set_material(&Material::new().with_color(Color::new(1., 0., 0.))
         .with_ambient(0.1).with_diffuse(0.9)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder6);
@@ -748,9 +748,9 @@ pub fn draw_cylinder_scene() {
     cylinder7.set_minimum(0.);
     cylinder7.set_maximum(0.3);
     cylinder7.set_closed(true);
-    cylinder7.set_transform(translate(0., 0., -2.25) * rotate(-0.15, Axis::Y) *
-        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
-    cylinder7.set_material(Material::new().with_color(Color::new(1., 1., 0.))
+    cylinder7.set_transform(&(translate(0., 0., -2.25) * rotate(-0.15, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05)));
+    cylinder7.set_material(&Material::new().with_color(Color::new(1., 1., 0.))
         .with_ambient(0.1).with_diffuse(0.9)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder7);
@@ -759,9 +759,9 @@ pub fn draw_cylinder_scene() {
     cylinder8.set_minimum(0.);
     cylinder8.set_maximum(0.3);
     cylinder8.set_closed(true);
-    cylinder8.set_transform(translate(0., 0., -2.25) * rotate(-0.3, Axis::Y) *
-        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
-    cylinder8.set_material(Material::new().with_color(Color::new(0., 1., 0.))
+    cylinder8.set_transform(&(translate(0., 0., -2.25) * rotate(-0.3, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05)));
+    cylinder8.set_material(&Material::new().with_color(Color::new(0., 1., 0.))
         .with_ambient(0.1).with_diffuse(0.9)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder8);
@@ -770,9 +770,9 @@ pub fn draw_cylinder_scene() {
     cylinder9.set_minimum(0.);
     cylinder9.set_maximum(0.3);
     cylinder9.set_closed(true);
-    cylinder9.set_transform(translate(0., 0., -2.25) * rotate(-0.45, Axis::Y) *
-        translate(0., 0., 1.5) * scale(0.05, 1., 0.05));
-    cylinder9.set_material(Material::new().with_color(Color::new(0., 1., 1.))
+    cylinder9.set_transform(&(translate(0., 0., -2.25) * rotate(-0.45, Axis::Y) *
+        translate(0., 0., 1.5) * scale(0.05, 1., 0.05)));
+    cylinder9.set_material(&Material::new().with_color(Color::new(0., 1., 1.))
         .with_ambient(0.1).with_diffuse(0.9)
         .with_specular(0.9).with_shininess(300.));
     world.objects.push(cylinder9);
@@ -782,8 +782,8 @@ pub fn draw_cylinder_scene() {
     cylinder10.set_minimum(0.0001);
     cylinder10.set_maximum(0.5);
     cylinder10.set_closed(true);
-    cylinder10.set_transform(translate(0., 0., -1.5) * scale(0.33, 1., 0.33));
-    cylinder10.set_material(Material::new().with_color(Color::new(0.25, 0., 0.))
+    cylinder10.set_transform(&(translate(0., 0., -1.5) * scale(0.33, 1., 0.33)));
+    cylinder10.set_material(&Material::new().with_color(Color::new(0.25, 0., 0.))
         .with_diffuse(0.1).with_specular(0.9)
         .with_shininess(300.).with_reflective(0.9)
         .with_transparency(0.9).with_refractive_index(1.5));
@@ -805,8 +805,8 @@ pub fn draw_cone_scene() {
     //cone.set_minimum(0.);
     cone.set_maximum(3.);
     cone.set_closed(true);
-    //cone.set_transform(translate(-1., 0., 1.) * scale(0.5, 1., 0.5));
-    cone.set_material(Material::new().with_color(Color::new(1., 0., 1.)));
+    //cone.set_transform(&(translate(-1., 0., 1.) * scale(0.5, 1., 0.5)));
+    cone.set_material(&Material::new().with_color(Color::new(1., 0., 1.)));
     world.objects.push(cone);
 
     let mut camera = Camera::new(100, 100, PI / 3.);
@@ -822,7 +822,7 @@ pub fn draw_hexagon() {
     world.lights.push(Light::point_light(Tuple::point(0., 10., 0.), Color::new(1., 1., 1.)));
 
     let mut hexagon = hexagon();
-    hexagon.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
+    hexagon.set_material(&Material::new().with_color(Color::new(1., 0., 0.)));
     world.objects.push(hexagon);
 
     let mut camera = Camera::new(100, 100, PI / 6.);
@@ -842,7 +842,7 @@ pub fn render_teapot() {
     let parser = parse_obj_file(file_data.unwrap());
 
     let teapot = obj_to_group(parser);
-    //teapot.set_material(Material::new().with_color(Color::new(1., 0., 0.)));
+    //teapot.set_material(&Material::new().with_color(Color::new(1., 0., 0.)));
     //teapot.divide(1);
     world.objects.push(teapot);
 
@@ -864,7 +864,7 @@ pub fn render_test_cube() {
 
     let test_cube = obj_to_group(parser);
     let mut sphere = Shape::Sphere(Sphere::new());
-    sphere.set_transform(translate(0., 2., 0.) * scale(0.5, 0.5, 0.5));
+    sphere.set_transform(&(translate(0., 2., 0.) * scale(0.5, 0.5, 0.5)));
     world.objects.push(test_cube);
     world.objects.push(sphere);
 
@@ -899,101 +899,101 @@ pub fn render_cover_image() {
     let plane_material = Material::new().with_color(WHITE).with_ambient(1.)
         .with_diffuse(0.).with_specular(0.);
     let plane_transform = translate(0., 0., 500.) * rotate(1.5707963267948966, Axis::X);
-    plane.set_material(plane_material);
-    plane.set_transform(plane_transform);
+    plane.set_material(&plane_material);
+    plane.set_transform(&(plane_transform));
     world.objects.push(plane);
 
     let mut sphere = Shape::Sphere(Sphere::new());
     let sphere_material = Material::new().with_color(Color::new(0.373, 0.404, 0.55))
         .with_diffuse(0.2).with_ambient(0.).with_specular(1.).with_shininess(200.)
         .with_reflective(0.7).with_transparency(0.7).with_refractive_index(1.5);
-    sphere.set_material(sphere_material);
-    sphere.set_transform(large_object.clone());
+    sphere.set_material(&sphere_material);
+    sphere.set_transform(&(large_object));
     world.objects.push(sphere);
 
     let mut white_cube1 = Shape::Cube(Cube::new());
-    white_cube1.set_material(white_material.clone());
-    white_cube1.set_transform(translate(4., 0., 0.) * medium_object.clone());
+    white_cube1.set_material(&white_material);
+    white_cube1.set_transform(&(translate(4., 0., 0.) * medium_object.clone()));
     world.objects.push(white_cube1);
 
     let mut blue_cube1 = Shape::Cube(Cube::new());
-    blue_cube1.set_material(blue_material.clone());
-    blue_cube1.set_transform(translate(8.5, 1.5, -0.5) * large_object.clone());
+    blue_cube1.set_material(&blue_material);
+    blue_cube1.set_transform(&(translate(8.5, 1.5, -0.5) * large_object.clone()));
     world.objects.push(blue_cube1);
 
     let mut red_cube1 = Shape::Cube(Cube::new());
-    red_cube1.set_material(red_material.clone());
-    red_cube1.set_transform(translate(0., 0., 4.) * large_object.clone());
+    red_cube1.set_material(&red_material);
+    red_cube1.set_transform(&(translate(0., 0., 4.) * large_object.clone()));
     world.objects.push(red_cube1);
 
     let mut white_cube2 = Shape::Cube(Cube::new());
-    white_cube2.set_material(white_material.clone());
-    white_cube2.set_transform(translate(4., 0., 4.) * small_object.clone());
+    white_cube2.set_material(&white_material);
+    white_cube2.set_transform(&(translate(4., 0., 4.) * small_object.clone()));
     world.objects.push(white_cube2);
 
     let mut purple_cube1 = Shape::Cube(Cube::new());
-    purple_cube1.set_material(purple_material.clone());
-    purple_cube1.set_transform(translate(7.5, 0.5, 4.) * medium_object.clone());
+    purple_cube1.set_material(&purple_material);
+    purple_cube1.set_transform(&(translate(7.5, 0.5, 4.) * medium_object.clone()));
     world.objects.push(purple_cube1);
 
     let mut white_cube3 = Shape::Cube(Cube::new());
-    white_cube3.set_material(white_material.clone());
-    white_cube3.set_transform(translate(-0.25, 0.25, 8.) * medium_object.clone());
+    white_cube3.set_material(&white_material);
+    white_cube3.set_transform(&(translate(-0.25, 0.25, 8.) * medium_object.clone()));
     world.objects.push(white_cube3);
 
     let mut blue_cube2 = Shape::Cube(Cube::new());
-    blue_cube2.set_material(blue_material.clone());
-    blue_cube2.set_transform(translate(4., 1., 7.5) * large_object.clone());
+    blue_cube2.set_material(&blue_material);
+    blue_cube2.set_transform(&(translate(4., 1., 7.5) * large_object.clone()));
     world.objects.push(blue_cube2);
 
     let mut red_cube2 = Shape::Cube(Cube::new());
-    red_cube2.set_material(red_material.clone());
-    red_cube2.set_transform(translate(10., 2., 7.5) * medium_object.clone());
+    red_cube2.set_material(&red_material);
+    red_cube2.set_transform(&(translate(10., 2., 7.5) * medium_object.clone()));
     world.objects.push(red_cube2);
 
     let mut white_cube4 = Shape::Cube(Cube::new());
-    white_cube4.set_material(white_material.clone());
-    white_cube4.set_transform(translate(8., 2., 12.) * small_object.clone());
+    white_cube4.set_material(&white_material);
+    white_cube4.set_transform(&(translate(8., 2., 12.) * small_object.clone()));
     world.objects.push(white_cube4);
 
     let mut white_cube5 = Shape::Cube(Cube::new());
-    white_cube5.set_material(white_material.clone());
-    white_cube5.set_transform(translate(20., 1., 9.) * small_object.clone());
+    white_cube5.set_material(&white_material);
+    white_cube5.set_transform(&(translate(20., 1., 9.) * small_object.clone()));
     world.objects.push(white_cube5);
 
     let mut blue_cube3 = Shape::Cube(Cube::new());
-    blue_cube3.set_material(blue_material.clone());
-    blue_cube3.set_transform(translate(-0.5, -5., 0.25) * large_object.clone());
+    blue_cube3.set_material(&blue_material);
+    blue_cube3.set_transform(&(translate(-0.5, -5., 0.25) * large_object.clone()));
     world.objects.push(blue_cube3);
 
     let mut red_cube3 = Shape::Cube(Cube::new());
-    red_cube3.set_material(red_material.clone());
-    red_cube3.set_transform(translate(4., -4., 0.) * large_object.clone());
+    red_cube3.set_material(&red_material);
+    red_cube3.set_transform(&(translate(4., -4., 0.) * large_object.clone()));
     world.objects.push(red_cube3);
 
     let mut white_cube6 = Shape::Cube(Cube::new());
-    white_cube6.set_material(white_material.clone());
-    white_cube6.set_transform(translate(8.5, -4., 0.) * large_object.clone());
+    white_cube6.set_material(&white_material);
+    white_cube6.set_transform(&(translate(8.5, -4., 0.) * large_object.clone()));
     world.objects.push(white_cube6);
 
     let mut white_cube7 = Shape::Cube(Cube::new());
-    white_cube7.set_material(white_material.clone());
-    white_cube7.set_transform(translate(0., -4., 4.) * large_object.clone());
+    white_cube7.set_material(&white_material);
+    white_cube7.set_transform(&(translate(0., -4., 4.) * large_object.clone()));
     world.objects.push(white_cube7);
 
     let mut purple_cube2 = Shape::Cube(Cube::new());
-    purple_cube2.set_material(purple_material.clone());
-    purple_cube2.set_transform(translate(-0.5, -4.5, 8.) * large_object.clone());
+    purple_cube2.set_material(&purple_material);
+    purple_cube2.set_transform(&(translate(-0.5, -4.5, 8.) * large_object.clone()));
     world.objects.push(purple_cube2);
 
     let mut white_cube8 = Shape::Cube(Cube::new());
-    white_cube8.set_material(white_material.clone());
-    white_cube8.set_transform(translate(0., -8., 4.) * large_object.clone());
+    white_cube8.set_material(&white_material);
+    white_cube8.set_transform(&(translate(0., -8., 4.) * large_object.clone()));
     world.objects.push(white_cube8);
 
     let mut white_cube9 = Shape::Cube(Cube::new());
-    white_cube9.set_material(white_material.clone());
-    white_cube9.set_transform(translate(-0.5, -8.5, 8.) * large_object.clone());
+    white_cube9.set_material(&white_material);
+    white_cube9.set_transform(&(translate(-0.5, -8.5, 8.) * large_object.clone()));
     world.objects.push(white_cube9);
 
     let mut camera = Camera::new(500, 500, 0.785);
@@ -1011,14 +1011,14 @@ pub fn render_pyramid_scene() {
     let mut plane = Shape::Plane(Plane::new());
     let plane_material = Material::new().with_color(Color::new(0.1, 0.5, 0.1))
         .with_ambient(1.).with_diffuse(0.).with_specular(0.);
-    plane.set_material(plane_material);
+    plane.set_material(&plane_material);
     world.objects.push(plane);
 
     let mut plane2 = Shape::Plane(Plane::new());
     let plane_material = Material::new().with_color(Color::new(0.4824, 0.8275, 0.9686))
         .with_ambient(1.).with_diffuse(0.).with_specular(0.);
-    plane2.set_material(plane_material);
-    plane2.set_transform(translate(0., 15., 0.));
+    plane2.set_material(&plane_material);
+    plane2.set_transform(&(translate(0., 15., 0.)));
     world.objects.push(plane2);
 
     let pyramid_material = Material::new().with_color(Color::new(0.8, 0.8, 0.8))
@@ -1026,25 +1026,25 @@ pub fn render_pyramid_scene() {
         .with_reflective(0.);
 
     let mut pyramid_side1 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., -2.), Tuple::point(2., 0., -2.)));
-    pyramid_side1.set_material(pyramid_material.clone());
+    pyramid_side1.set_material(&pyramid_material);
     world.objects.push(pyramid_side1);
 
     let mut pyramid_side2 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., -2.), Tuple::point(-2., 0., 2.)));
-    pyramid_side2.set_material(pyramid_material.clone());
+    pyramid_side2.set_material(&pyramid_material);
     world.objects.push(pyramid_side2);
 
     let mut pyramid_side3 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(-2., 0., 2.), Tuple::point(2., 0., 2.)));
-    pyramid_side3.set_material(pyramid_material.clone());
+    pyramid_side3.set_material(&pyramid_material);
     world.objects.push(pyramid_side3);
 
     let mut pyramid_side4 = Shape::Triangle(Triangle::new(Tuple::point(0., 2., 0.), Tuple::point(2., 0., 2.), Tuple::point(-2., 0., -2.)));
-    pyramid_side4.set_material(pyramid_material.clone());
+    pyramid_side4.set_material(&pyramid_material);
     world.objects.push(pyramid_side4);
 
     let sphere_material = Material::new().with_color(Color::new(0.1, 0.1, 0.5));
     let mut sphere = Shape::Sphere(Sphere::new());
-    sphere.set_material(sphere_material);
-    sphere.set_transform(translate(0., 5., 0.));
+    sphere.set_material(&sphere_material);
+    sphere.set_transform(&(translate(0., 5., 0.)));
     sphere.set_casts_shadow(false);
     world.objects.push(sphere);
 
@@ -1070,8 +1070,8 @@ pub fn render_whitefoil() {
         .with_ambient(1.).with_diffuse(0.).with_specular(0.);
 
     let mut plane = Shape::Plane(Plane::new());
-    plane.set_material(red_material.clone());
-    plane.set_transform(translate(0., -0.1, 0.));
+    plane.set_material(&red_material);
+    plane.set_transform(&(translate(0., -0.1, 0.)));
     world.objects.push(plane);
 
     // Build the rays spiralling around the edges.
@@ -1080,80 +1080,84 @@ pub fn render_whitefoil() {
     let bottom_base_position = 3.98;
     let left_base_position = -3.98;
     for pos in 0..22 {
+        let y_height = if pos >= 6 && pos <= 15 { 0.4 } else { 0.1 };
+
         let top_position = top_base_position + (pos as f64) * 0.37;
         let right_position = right_base_position - (pos as f64) * 0.37;
         let bottom_position = bottom_base_position - (pos as f64) * 0.37;
         let left_position = left_base_position + (pos as f64) * 0.37;
 
-        let mut top_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(top_position, 0.1, 4.1), Tuple::point(top_position + 0.18, 0.1, 4.1)));
-        top_triangle.set_material(yellow_material.clone());
+        let mut top_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., y_height, 0.), Tuple::point(top_position, y_height, 4.1), Tuple::point(top_position + 0.18, y_height, 4.1)));
+        top_triangle.set_material(&yellow_material);
+        top_triangle.set_casts_shadow(false);
         world.objects.push(top_triangle);
 
-        let mut right_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(4.1, 0.1, right_position), Tuple::point(4.1, 0.1, right_position - 0.18)));
-        right_triangle.set_material(yellow_material.clone());
+        let mut right_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., y_height, 0.), Tuple::point(4.1, y_height, right_position), Tuple::point(4.1, y_height, right_position - 0.18)));
+        right_triangle.set_material(&yellow_material);
+        right_triangle.set_casts_shadow(false);
         world.objects.push(right_triangle);
 
-        let mut bottom_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(bottom_position, 0.1, -4.1), Tuple::point(bottom_position - 0.18, 0.1, -4.1)));
-        bottom_triangle.set_material(yellow_material.clone());
+        let mut bottom_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., y_height, 0.), Tuple::point(bottom_position, y_height, -4.1), Tuple::point(bottom_position - 0.18, y_height, -4.1)));
+        bottom_triangle.set_material(&yellow_material);
+        bottom_triangle.set_casts_shadow(false);
         world.objects.push(bottom_triangle);
 
-        let mut left_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(-4.1, 0.1, left_position), Tuple::point(-4.1, 0.1, left_position + 0.18)));
-        left_triangle.set_material(yellow_material.clone());
+        let mut left_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., y_height, 0.), Tuple::point(-4.1, y_height, left_position), Tuple::point(-4.1, y_height, left_position + 0.18)));
+        left_triangle.set_material(&yellow_material);
+        left_triangle.set_casts_shadow(false);
         world.objects.push(left_triangle);
     }
 
-    let mut black_cube = Shape::Cube(Cube::new());
-    black_cube.set_material(black_material.clone());
-    black_cube.set_transform(translate(0., 0.2, 0.) * scale(3., 0.1, 3.));
-    world.objects.push(black_cube);
+    let mut black_square = Shape::Cube(Cube::new());
+    black_square.set_material(&black_material);
+    black_square.set_transform(&(translate(0., 0.2, 0.) * scale(3.1, 0.1, 3.1)));
+    world.objects.push(black_square);
 
-    let mut red_cube = Shape::Cube(Cube::new());
-    red_cube.set_material(red_material.clone());
-    red_cube.set_transform(translate(0., 0.3, 0.) * scale(2., 0.1, 2.));
-    world.objects.push(red_cube);
+    let mut red_rays_top = Shape::Triangle(Triangle::new(Tuple::point(0., 0.3, 0.), Tuple::point(-1.86, 0.3, 4.1), Tuple::point(1.86, 0.3, 4.1)));
+    red_rays_top.set_material(&red_material);
+    world.objects.push(red_rays_top);
 
-    let mut yellow_cube1 = Shape::Cube(Cube::new());
-    yellow_cube1.set_material(yellow_material.clone());
-    yellow_cube1.set_transform(translate(0., 0.4, 0.) * scale(3., 0.1, 0.4) * rotate(PI / 4., Axis::Y));
-    world.objects.push(yellow_cube1);
+    let mut red_rays_right = Shape::Triangle(Triangle::new(Tuple::point(0., 0.3, 0.), Tuple::point(4.1, 0.3, 1.86), Tuple::point(4.1, 0.3, -1.86)));
+    red_rays_right.set_material(&red_material);
+    world.objects.push(red_rays_right);
 
-    let mut yellow_cube2 = Shape::Cube(Cube::new());
-    yellow_cube2.set_material(yellow_material.clone());
-    yellow_cube2.set_transform(translate(0., 0.4, 0.) * scale(0.4, 0.1, 3.) * rotate(PI / 4., Axis::Y));
-    world.objects.push(yellow_cube2);
+    let mut red_rays_bottom = Shape::Triangle(Triangle::new(Tuple::point(0., 0.3, 0.), Tuple::point(1.86, 0.3, 4.1), Tuple::point(-1.86, 0.3, 4.1)));
+    red_rays_bottom.set_material(&red_material);
+    world.objects.push(red_rays_bottom);
+
+    let mut red_rays_left = Shape::Triangle(Triangle::new(Tuple::point(0., 0.3, 0.), Tuple::point(4.1, 0.3, -1.86), Tuple::point(4.1, 0.3, 1.86)));
+    red_rays_left.set_material(&red_material);
+    world.objects.push(red_rays_left);
+
+    let mut red_square = Shape::Cube(Cube::new());
+    red_square.set_material(&red_material);
+    red_square.set_transform(&(translate(0., 0.5, 0.) * scale(2.1, 0.1, 2.2)));
+    world.objects.push(red_square);
+
+    let mut lotus_diamond_horizontal = Shape::Cube(Cube::new());
+    lotus_diamond_horizontal.set_material(&white_material);
+    lotus_diamond_horizontal.set_transform(&(translate(0., 0.6, 0.) * scale(3., 0.1, 2.05) * rotate(PI / 4., Axis::Y)));
+    world.objects.push(lotus_diamond_horizontal);
+
+    let mut lotus_diamond_vertical = Shape::Cube(Cube::new());
+    lotus_diamond_vertical.set_material(&white_material);
+    lotus_diamond_vertical.set_transform(&(translate(0., 0.6, 0.) * scale(2.05, 0.1, 3.) * rotate(PI / 4., Axis::Y)));
+    world.objects.push(lotus_diamond_vertical);
+
+    let mut cross_diamond_horizontal = Shape::Cube(Cube::new());
+    cross_diamond_horizontal.set_material(&yellow_material);
+    cross_diamond_horizontal.set_transform(&(translate(0., 0.7, 0.) * scale(3., 0.1, 0.3) * rotate(PI / 4., Axis::Y)));
+    world.objects.push(cross_diamond_horizontal);
+
+    let mut cross_diamond_vertical = Shape::Cube(Cube::new());
+    cross_diamond_vertical.set_material(&yellow_material);
+    cross_diamond_vertical.set_transform(&(translate(0., 0.7, 0.) * scale(0.3, 0.1, 3.) * rotate(PI / 4., Axis::Y)));
+    world.objects.push(cross_diamond_vertical);
     
-    let mut white_cube = Shape::Cube(Cube::new());
-    white_cube.set_material(white_material.clone());
-    white_cube.set_transform(translate(0., 0.5, 0.) * rotate(PI / 4., Axis::Y) * scale(0.5, 0.1, 0.5));
-    world.objects.push(white_cube);
-
-    // Build the rays spiralling around the edges.
-    let top_base_position = -3.98;
-    let right_base_position = 3.98;
-    let bottom_base_position = 3.98;
-    let left_base_position = -3.98;
-    for pos in 0..22 {
-        let top_position = top_base_position + (pos as f64) * 0.37;
-        let right_position = right_base_position - (pos as f64) * 0.37;
-        let bottom_position = bottom_base_position - (pos as f64) * 0.37;
-        let left_position = left_base_position + (pos as f64) * 0.37;
-
-        let mut top_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(top_position, 0.1, 4.1), Tuple::point(top_position + 0.18, 0.1, 4.1)));
-        top_triangle.set_material(yellow_material.clone());
-        world.objects.push(top_triangle);
-
-        let mut right_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(4.1, 0.1, right_position), Tuple::point(4.1, 0.1, right_position - 0.18)));
-        right_triangle.set_material(yellow_material.clone());
-        world.objects.push(right_triangle);
-
-        let mut bottom_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(bottom_position, 0.1, -4.1), Tuple::point(bottom_position - 0.18, 0.1, -4.1)));
-        bottom_triangle.set_material(yellow_material.clone());
-        world.objects.push(bottom_triangle);
-
-        let mut left_triangle = Shape::Triangle(Triangle::new(Tuple::point(0., 0.1, 0.), Tuple::point(-4.1, 0.1, left_position), Tuple::point(-4.1, 0.1, left_position + 0.18)));
-        left_triangle.set_material(yellow_material.clone());
-        world.objects.push(left_triangle);
-    }
+    let mut central_diamond = Shape::Cube(Cube::new());
+    central_diamond.set_material(&white_material);
+    central_diamond.set_transform(&(translate(0., 0.8, 0.) * rotate(PI / 4., Axis::Y) * scale(0.4, 0.1, 0.4)));
+    world.objects.push(central_diamond);
 
     let mut camera = Camera::new(100, 100, PI / 4.);
     camera.transform = view_transform(Tuple::point(0., 10., 0.), Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));

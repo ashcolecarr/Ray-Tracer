@@ -116,7 +116,7 @@ impl Cone {
         result < y.powi(2) || near_eq(result, y.powi(2))
     }
 
-    pub fn normal_at(&self, world_point: Tuple, _hit: Intersection) -> Tuple {
+    pub fn normal_at(&self, world_point: Tuple, _hit: &Intersection) -> Tuple {
         let distance = world_point.x.powi(2) + world_point.z.powi(2);
 
         if distance < self.maximum.powi(2) && (world_point.y > self.maximum - EPSILON ||
@@ -229,7 +229,7 @@ mod tests {
 
         for source in expecteds.iter().zip(points) {
             let (expected, point) = source;
-            let actual = cone.normal_at(point, intersection.clone());
+            let actual = cone.normal_at(point, &intersection);
             
             assert_eq!(*expected, actual);
         }
